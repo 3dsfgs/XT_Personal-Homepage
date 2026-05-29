@@ -15,6 +15,7 @@ import dynamic from "next/dynamic";
 import { Controller } from "@/components/controller/Controller";
 import { Weather } from "@/components/weather/Weather";
 import { pg } from "@/lib/db";
+import { IntroAnimation } from "@/components/effect/IntroAnimation";
 
 export const revalidate = 0;
 
@@ -53,45 +54,48 @@ export default async function Home() {
   };
 
   return (
-    <Suspense
-      fallback={
-        <Loader warpClass="h-screen bg-black" miao>
-          ᓚᘏᗢ猫猫正在努力加载...
-        </Loader>
-      }
-    >
-      {globalStyle?.weather && <Weather size={18} />}
-      {renderMain({
-        ...others,
-        footers,
-        gapSize,
-        istTransition,
-        staticSites,
-        modalSites,
-        style: varStyle,
-      })}
-      <MainEffect
-        bgArr={bgConfig.bgs}
-        mbgArr={bgConfig.mbgs}
-        bgStyle={bgConfig?.bgStyle}
-        blur={bgConfig?.blur || "sm"}
-        audio={bgConfig?.audio}
-        theme={globalStyle?.theme}
-        motions={getMotion(0.1, 4, 0.2, istTransition)}
-      />
-      {footer ? (
-        <Footer
+    <>
+      <IntroAnimation />
+      <Suspense
+        fallback={
+          <Loader warpClass="h-screen bg-black" miao>
+            ᓚᘏᗢ猫猫正在努力加载...
+          </Loader>
+        }
+      >
+        {globalStyle?.weather && <Weather size={18} />}
+        {renderMain({
+          ...others,
+          footers,
+          gapSize,
+          istTransition,
+          staticSites,
+          modalSites,
+          style: varStyle,
+        })}
+        <MainEffect
+          bgArr={bgConfig.bgs}
+          mbgArr={bgConfig.mbgs}
+          bgStyle={bgConfig?.bgStyle}
+          blur={bgConfig?.blur || "sm"}
+          audio={bgConfig?.audio}
+          theme={globalStyle?.theme}
           motions={getMotion(0.1, 4, 0.2, istTransition)}
-          footer={footer}
         />
-      ) : null}
-      {bodyHtml && (
-        <section
-          id="remio-bodyHtml"
-          className="relative z-20"
-          dangerouslySetInnerHTML={{ __html: bodyHtml }}
-        ></section>
-      )}
-    </Suspense>
+        {footer ? (
+          <Footer
+            motions={getMotion(0.1, 4, 0.2, istTransition)}
+            footer={footer}
+          />
+        ) : null}
+        {bodyHtml && (
+          <section
+            id="remio-bodyHtml"
+            className="relative z-20"
+            dangerouslySetInnerHTML={{ __html: bodyHtml }}
+          ></section>
+        )}
+      </Suspense>
+    </>
   );
 }

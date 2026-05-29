@@ -67,7 +67,7 @@ export interface BgConfig {
   bg?: string; // pc背景图
   mbg?: string; // 移动端背景图
   audio?: string; // 背景音频
-  bgStyle?: string; // 背景飘浮风格 可选 sakura 或者 snow 或者自行填写飘浮物资源图片
+  bgStyle?: "sakura" | "snow" | "hyperspeed" | (string & {}); // 背景飘浮风格，可选 sakura / snow / hyperspeed / 自定义资源路径
   blur?: string;
   cardOpacity?: number;
   carousel?: boolean;

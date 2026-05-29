@@ -90,6 +90,16 @@ export function Vertical({
         motions={getMotion(0.1, 1, 0.2, istTransition)}
         text={subTitle}
       ></TextEffect>
+      {(subTitleConfig?.content || subTitleConfig?.desc) && (
+        <div className="relative z-[1] mx-4 -mt-4 flex max-w-3xl flex-col items-center gap-1 text-center text-sm leading-6 text-white/70 sm:mx-0 sm:text-base">
+          {subTitleConfig?.content ? (
+            <p className="text-white/80">{subTitleConfig.content}</p>
+          ) : null}
+          {subTitleConfig?.desc ? (
+            <p className="text-white/55">{subTitleConfig.desc}</p>
+          ) : null}
+        </div>
+      )}
       <SocialIcons
         {...socialConfig}
         motions={getMotion(0.1, 2, 0.2, istTransition)}

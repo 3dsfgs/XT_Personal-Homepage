@@ -6,11 +6,10 @@
  * @Description:
  */
 "use client";
-import { ExternalLink, Setting } from "@kasuie/icon";
+import { Setting } from "@kasuie/icon";
 import { clsx } from "@kasuie/utils";
 import { motion } from "framer-motion";
 import { ThemeSwitcher } from "../ui/switcher/ThemeSwitcher";
-import { getMotion, showMotion } from "@/lib/motion";
 import dynamic from "next/dynamic";
 
 const MuteSwitcher = dynamic(

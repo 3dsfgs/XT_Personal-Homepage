@@ -10,8 +10,16 @@ import { BgConfig } from "@/config/config";
 import { isClientSide, aSakura, clsx } from "@kasuie/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { variants, showMotion } from "@/lib/motion";
+import { variants } from "@/lib/motion";
 import { Controller } from "../controller/Controller";
+import dynamic from "next/dynamic";
+
+const HyperspeedBg = dynamic(() => import("./HyperspeedBg"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const HYPERSPEED_STORAGE_KEY = "remio-home:hyperspeed-preset";
 
 export function MainEffect({
   bgArr,
@@ -25,11 +33,13 @@ export function MainEffect({
   transitionStyle = "default",
   autoAnimate,
   theme,
+  hyperspeedPresetIndex,
   motions = {},
 }: BgConfig & {
   bgArr: string[];
   mbgArr: string[];
   theme?: string;
+  hyperspeedPresetIndex?: number;
   motions?: object;
 }) {
   const videoExtensions = [
@@ -58,8 +68,12 @@ export function MainEffect({
 
   const [vPlaying, setVPlaying] = useState(false);
 
+  const [hyperspeedPreset, setHyperspeedPreset] = useState<number>(
+    Math.abs(hyperspeedPresetIndex || 0) % 5
+  );
+
   useEffect(() => {
-    if (isClientSide && bgStyle && document) {
+    if (bgStyle && bgStyle !== "hyperspeed" && isClientSide && document) {
       if (!document.querySelector("#remio_sakura")) {
         aSakura(bgStyle);
       }
@@ -68,7 +82,31 @@ export function MainEffect({
       audioRef.current.play();
       setAPlaying(true);
     }
-  });
+  }, [audio, bgStyle]);
+
+  useEffect(() => {
+    if (bgStyle !== "hyperspeed") return;
+
+    if (typeof hyperspeedPresetIndex === "number") {
+      setHyperspeedPreset(Math.abs(hyperspeedPresetIndex) % 5);
+      return;
+    }
+
+    if (!isClientSide) return;
+
+    const storedPreset = window.localStorage.getItem(HYPERSPEED_STORAGE_KEY);
+    const parsedPreset =
+      storedPreset === null ? Number.NaN : Number(storedPreset);
+
+    if (Number.isFinite(parsedPreset)) {
+      setHyperspeedPreset(Math.abs(parsedPreset) % 5);
+      return;
+    }
+
+    const nextPreset = Math.floor(Math.random() * 5);
+    window.localStorage.setItem(HYPERSPEED_STORAGE_KEY, String(nextPreset));
+    setHyperspeedPreset(nextPreset);
+  }, [bgStyle, hyperspeedPresetIndex]);
 
   useEffect(() => {
     if (audio) {
@@ -257,9 +295,12 @@ export function MainEffect({
   return (
     <section className="z-0">
       <AnimatePresence>
-        {bgArr && renderBg(bgArr[index], false, index)}
-        {mbgArr && renderBg(mbgArr[mindex], true, mindex)}
+        {bgStyle !== "hyperspeed" && bgArr && renderBg(bgArr[index], false, index)}
+        {bgStyle !== "hyperspeed" && mbgArr && renderBg(mbgArr[mindex], true, mindex)}
         {audio && renderAudio(audio)}
+        {bgStyle === "hyperspeed" ? (
+          <HyperspeedBg presetIndex={hyperspeedPreset} />
+        ) : null}
         {/* {bgArr && bgArr.map((v, i) => renderBg(v, false, i))}
         {mbgArr && mbgArr.map((v, i) => renderBg(v, true, i))} */}
       </AnimatePresence>

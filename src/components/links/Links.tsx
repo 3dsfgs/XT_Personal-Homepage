@@ -64,10 +64,9 @@ export function Links({
     const className = clsx(
       "group/main relative shadow-mio-link z-[1] flex h-[90px] flex-row flex-nowrap items-center gap-[10px] overflow-hidden rounded-2xl bg-black/10 p-[10px_15px] duration-500 hover:z-10 hover:border-transparent hover:!blur-none",
       {
-        "hover:!scale-110 backdrop-blur-[7px]": outer, // hover:bg-[#229fff]
+        "hover:!scale-110 backdrop-blur-[7px]": outer,
         "group-hover/links:scale-90": sitesConfig.hoverScale,
         "group-hover/links:blur-[1px]": sitesConfig.hoverBlur,
-        // "mx-2": outer,
       }
     );
 
