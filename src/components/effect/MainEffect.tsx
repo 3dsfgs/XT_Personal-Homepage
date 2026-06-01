@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { variants } from "@/lib/motion";
 import { Controller } from "../controller/Controller";
 import dynamic from "next/dynamic";
+import { HYPERSPEED_PRESET_COUNT } from "./HyperspeedBg";
 
 const HyperspeedBg = dynamic(() => import("./HyperspeedBg"), {
   ssr: false,
@@ -69,7 +70,7 @@ export function MainEffect({
   const [vPlaying, setVPlaying] = useState(false);
 
   const [hyperspeedPreset, setHyperspeedPreset] = useState<number>(
-    Math.abs(hyperspeedPresetIndex || 0) % 5
+    Math.abs(hyperspeedPresetIndex || 0) % HYPERSPEED_PRESET_COUNT
   );
 
   useEffect(() => {
@@ -88,7 +89,9 @@ export function MainEffect({
     if (bgStyle !== "hyperspeed") return;
 
     if (typeof hyperspeedPresetIndex === "number") {
-      setHyperspeedPreset(Math.abs(hyperspeedPresetIndex) % 5);
+      setHyperspeedPreset(
+        Math.abs(hyperspeedPresetIndex) % HYPERSPEED_PRESET_COUNT
+      );
       return;
     }
 
@@ -99,14 +102,30 @@ export function MainEffect({
       storedPreset === null ? Number.NaN : Number(storedPreset);
 
     if (Number.isFinite(parsedPreset)) {
-      setHyperspeedPreset(Math.abs(parsedPreset) % 5);
+      const nextPreset =
+        (Math.abs(parsedPreset) + 1) % HYPERSPEED_PRESET_COUNT;
+      window.localStorage.setItem(HYPERSPEED_STORAGE_KEY, String(nextPreset));
+      setHyperspeedPreset(nextPreset);
       return;
     }
 
-    const nextPreset = Math.floor(Math.random() * 5);
+    const nextPreset = Math.floor(Math.random() * HYPERSPEED_PRESET_COUNT);
     window.localStorage.setItem(HYPERSPEED_STORAGE_KEY, String(nextPreset));
     setHyperspeedPreset(nextPreset);
   }, [bgStyle, hyperspeedPresetIndex]);
+
+  const handleCycleHyperspeedPreset = () => {
+    setHyperspeedPreset((prev) => {
+      const nextPreset = (prev + 1) % HYPERSPEED_PRESET_COUNT;
+      if (isClientSide) {
+        window.localStorage.setItem(
+          HYPERSPEED_STORAGE_KEY,
+          String(nextPreset)
+        );
+      }
+      return nextPreset;
+    });
+  };
 
   useEffect(() => {
     if (audio) {
@@ -139,12 +158,10 @@ export function MainEffect({
   }, [mbgArr, carousel]);
 
   useEffect(() => {
-    if (!autoAnimate) {
-      transitionStyle
-        ? setVariant(variants.default)
-        : setVariant(variants[transitionStyle]);
-    }
-  }, [autoAnimate, transitionStyle]);
+    const nextVariant =
+      variants[transitionStyle as keyof typeof variants] || variants.default;
+    setVariant(nextVariant);
+  }, [transitionStyle]);
 
   useEffect(() => {
     if (mbgArr?.length) {
@@ -299,7 +316,10 @@ export function MainEffect({
         {bgStyle !== "hyperspeed" && mbgArr && renderBg(mbgArr[mindex], true, mindex)}
         {audio && renderAudio(audio)}
         {bgStyle === "hyperspeed" ? (
-          <HyperspeedBg presetIndex={hyperspeedPreset} />
+          <HyperspeedBg
+            presetIndex={hyperspeedPreset}
+            onPresetChange={handleCycleHyperspeedPreset}
+          />
         ) : null}
         {/* {bgArr && bgArr.map((v, i) => renderBg(v, false, i))}
         {mbgArr && mbgArr.map((v, i) => renderBg(v, true, i))} */}

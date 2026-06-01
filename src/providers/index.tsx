@@ -46,7 +46,7 @@ export function AppProviders({
         attribute="class"
         key="themeProvider"
         defaultTheme="light"
-        enableSystem
+        enableSystem={false}
       >
         {css?.length
           ? css?.map((v: string) => <link rel="stylesheet" key={v} href={v} />)

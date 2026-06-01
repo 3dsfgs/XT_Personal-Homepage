@@ -1,7 +1,7 @@
 {
   "name": "南明",
   "favicon": "/favicon.ico",
-  "keywords": "南明,个人主页,墨池,Mio导航,C++后端,个人博客,主页,记录",
+  "keywords": "南明,个人主页,青木星,Mio导航,C++后端,个人博客,主页,记录,博客",
   "description": "南明的个人主页，记录、实验和发呆",
   "avatarConfig": {
     "src": "/images/avatar.png",
@@ -68,9 +68,9 @@
   "sites": [
     {
       "icon": "/icons/ink.svg",
-      "title": "墨池",
+      "title": "青木星",
       "url": "/ink",
-      "desc": "黑白水墨发呆解压页"
+      "desc": "木系水墨发呆解压页"
     },
     {
       "icon": "https://cs.kasuie.cc/icons/1419ac35-0a57-4359-bb2f-55a26fc52bd8.png!cover",
@@ -80,9 +80,9 @@
     },
     {
       "icon": "https://cs.kasuie.cc/icons/d5570e8a-a826-47be-91b2-f6949b743111.webp!cover",
-      "title": "南明",
-      "url": "https://kasuie.cc",
-      "desc": "个人博客"
+      "title": "个人博客",
+      "url": "/blog",
+      "desc": "站内 Markdown 博客"
     }
   ],
   "sitesConfig": {

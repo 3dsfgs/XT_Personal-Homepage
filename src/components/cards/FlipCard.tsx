@@ -40,7 +40,7 @@ export function FlipCard({
     return (
       <div
         className={clsx("group/flip z-[1] overflow-visible", {
-          "h-[100px] min-w-48": !flip,
+          "h-[100px] w-full min-w-0": !flip,
           [`${warpClass}`]: warpClass,
         })}
       >

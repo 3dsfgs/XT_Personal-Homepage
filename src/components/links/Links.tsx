@@ -57,12 +57,13 @@ export function Links({
           style={style}
           direction={sitesConfig?.direction}
           hoverFlip={sitesConfig?.hoverFlip}
+          warpClass="h-full w-full min-w-0"
         />
       );
     }
 
     const className = clsx(
-      "group/main relative shadow-mio-link z-[1] flex h-[90px] flex-row flex-nowrap items-center gap-[10px] overflow-hidden rounded-2xl bg-black/10 p-[10px_15px] duration-500 hover:z-10 hover:border-transparent hover:!blur-none",
+      "group/main relative z-[1] flex h-[72px] flex-row flex-nowrap items-center gap-[8px] overflow-hidden rounded-2xl bg-black/10 p-[8px_12px] duration-500 hover:z-10 hover:border-transparent hover:!blur-none shadow-mio-link",
       {
         "hover:!scale-110 backdrop-blur-[7px]": outer,
         "group-hover/links:scale-90": sitesConfig.hoverScale,
@@ -76,25 +77,29 @@ export function Links({
           <div className="absolute left-[20px] right-0 top-24 z-[-1] h-[25rem] w-[25rem] rotate-[-36deg] rounded-full bg-[#3651cf26] duration-500 group-hover/main:left-[-20px] group-hover/main:top-[-20px]"></div>
         )} */}
         {item.icon && (
-          <div className="shrink-0 p-[5px]">
+          <div className="shrink-0 p-[3px]">
             <Image
               alt={item.title}
               src={item.icon}
-              width={42}
-              height={42}
+              width={36}
+              height={36}
               style={{
                 borderRadius: "50%",
                 objectFit: "cover",
-                height: "42px",
-                width: "42px",
+                height: "36px",
+                width: "36px",
               }}
             ></Image>
           </div>
         )}
-        <div className="p-[5px]">
-          {item.title && <p className="truncate text-white">{item.title}</p>}
+        <div className="min-w-0 p-[4px]">
+          {item.title && (
+            <p className="truncate text-[15px] leading-5 text-white">
+              {item.title}
+            </p>
+          )}
           {item.desc && (
-            <p className="truncate pt-[10px] text-[15px] text-white/70">
+            <p className="truncate pt-[6px] text-[13px] leading-5 text-white/70">
               {item.desc}
             </p>
           )}
@@ -111,20 +116,26 @@ export function Links({
   };
 
   const linkItem = (item: Site, key: number, outer: boolean = true) => {
+    const isExternalUrl = /^https?:\/\//i.test(item.url || "");
     return (
       <div
         key={key}
         title={item.title}
         className={clsx(
-          "flex min-w-[215px] basis-11/12 cursor-pointer flex-col justify-center",
+          "flex min-w-0 cursor-pointer flex-col justify-center",
           {
-            "sm:mio-col-2 md:mio-col-2 lg:mio-col-3 xl:mio-col-4": outer,
+            "w-full": outer,
             "sm:mio-col-2 basis-full": !outer,
           }
         )}
       >
         {item?.url ? (
-          <Link href={item.url} className="h-full w-full" target="_blank">
+          <Link
+            href={item.url}
+            className="h-full w-full"
+            target={isExternalUrl ? "_blank" : undefined}
+            rel={isExternalUrl ? "noreferrer" : undefined}
+          >
             {itemContent(item, outer)}
           </Link>
         ) : (
@@ -142,7 +153,7 @@ export function Links({
   return (
     <motion.div
       {...motions}
-      className="group/links z-[1] mt-3 flex w-[95vw] flex-wrap justify-evenly gap-x-4 gap-y-6 md:mt-8 md:w-[65vw]"
+      className="group/links z-[1] mt-3 grid w-[95vw] grid-cols-1 gap-3 md:mt-8 md:w-[65vw] md:grid-cols-3"
     >
       {staticSites.map((v, index) => linkItem(v, index))}
       {sitesConfig?.modal && modalSites?.length ? (

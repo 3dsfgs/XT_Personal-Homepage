@@ -9,6 +9,7 @@
 import nextPWA from "next-pwa";
 
 const isProd = process.env.NODE_ENV === "production";
+const isWindows = process.platform === "win32";
 
 const withPWA = nextPWA({
   dest: "public",
@@ -18,7 +19,7 @@ const withPWA = nextPWA({
 });
 
 const nextConfig = {
-  output: "standalone",
+  output: isWindows ? undefined : "standalone",
   eslint: {
     ignoreDuringBuilds: true,
   },
