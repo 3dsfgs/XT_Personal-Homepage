@@ -19,9 +19,9 @@ var config = {
     PRESSURE_ITERATIONS: 20,
     CURL: 30,
     SPLAT_RADIUS: 0.25,
-    SPLAT_FORCE: 3200,
+    SPLAT_FORCE: 1200,  // 1. 降低点击时的力道（原值 3200 偏大，容易导致局部数值瞬间飙高）
     SHADING: true,
-    COLORFUL: true,
+    COLORFUL: false,
     COLOR_UPDATE_SPEED: 10,
     PAUSED: false,
     BACK_COLOR: { r: 18, g: 14, b: 12 },
@@ -29,8 +29,8 @@ var config = {
     BLOOM: true,
     BLOOM_ITERATIONS: 8,
     BLOOM_RESOLUTION: 256,
-    BLOOM_INTENSITY: 0.48,
-    BLOOM_THRESHOLD: 0.64,
+    BLOOM_INTENSITY: 0.25,  // 2. 调低辉光强度（原值 0.48 偏高，可以改成 0.2 或 0.25）
+    BLOOM_THRESHOLD: 0.90,  // 3. 提高辉光触发阈值（原值 0.64 较低，很多暗色也被放大了。改成 0.85+ 让只有极亮的地方有微弱光晕）
     BLOOM_SOFT_KNEE: 0.7,
     SUNRAYS: true,
     SUNRAYS_RESOLUTION: 196,
@@ -927,19 +927,29 @@ function blur (target, temp, iterations) {
 }
 
 function splatPointer (pointer) {
+    // 原代码没有对交互颜色做溢出处理，但如果感觉还是太刺眼
+    // 可以给鼠标滑过、点击的地方乘以一个衰减系数
     var force = firstInteractiveSplat ? config.SPLAT_FORCE * 0.58 : config.SPLAT_FORCE;
     var dx = pointer.deltaX * force;
     var dy = pointer.deltaY * force;
     firstInteractiveSplat = false;
-    splat(pointer.texcoordX, pointer.texcoordY, dx, dy, pointer.color);
+
+    // 如果觉得鼠标点击处的颜色依旧太亮，可以在传入前将颜色稍作暗化处理：
+    var adjustedColor = {
+        r: pointer.color.r * 0.2,
+        g: pointer.color.g * 0.2,
+        b: pointer.color.b * 0.2
+    };
+
+    splat(pointer.texcoordX, pointer.texcoordY, dx, dy, adjustedColor);
 }
 
 function multipleSplats (amount) {
     for (var i = 0; i < amount; i++) {
         var color = generateColor();
-        color.r *= 6.0;
-        color.g *= 6.0;
-        color.b *= 6.0;
+        color.r *= 1.2;
+        color.g *= 1.2;
+        color.b *= 1.2;
         var x = Math.random();
         var y = Math.random();
         var dx = 1000 * (Math.random() - 0.5);
