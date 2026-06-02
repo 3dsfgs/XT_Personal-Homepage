@@ -64,10 +64,11 @@ export function Vertical({
       className={clsx(
         "relative z-[1] flex w-full flex-col items-center justify-center pb-16",
         {
-          "gap-8 pt-[20vh]": gapSize == "sm",
-          "gap-10 pt-[18vh]": gapSize == "md",
-          "gap-12 pt-[15vh]": gapSize == "lg",
-          "!pb-20": footers > 2,
+          // 调整后的示例
+          "gap-4 pt-[5vh]": gapSize == "sm",  // 间距变小，整体往上提
+          "gap-6 pt-[8vh]": gapSize == "md",
+          "gap-8 pt-[7vh]": gapSize == "lg",
+          "!pb-12": footers > 2,                // 底部留白变得更大    
           [`${className}`]: className,
         }
       )}

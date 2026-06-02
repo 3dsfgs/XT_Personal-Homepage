@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "青木星 | remio-home",
-  description: "青木星 - 使用原始 AquaInkGL 水墨效果的静态解压页",
+  title: "流墨星河 | remio-home",
+  description: "流墨星河 - 使用原始 AquaInkGL 水墨效果的静态解压页",
 };
 
 export default function InkPage() {
@@ -20,7 +20,7 @@ export default function InkPage() {
             AquaInkGL
           </p>
           <h1 className="mt-2 text-2xl font-semibold tracking-[0.25em]">
-            青木星
+            流墨星河
           </h1>
         </div>
         <Link

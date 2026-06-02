@@ -656,7 +656,7 @@ export const AppRules = [
 export const defaultAppConfig: AppConfig = {
   name: "南明",
   favicon: "/favicon.ico",
-  keywords: "南明,个人主页,青木星,Mio导航,C++后端,个人博客,主页,记录,博客",
+  keywords: "南明,个人主页,流墨星河,Mio导航,C++后端,个人博客,主页,记录,博客",
   description: "南明的个人主页，记录、实验和发呆",
   domain: "",
   avatarConfig: {
@@ -722,9 +722,9 @@ export const defaultAppConfig: AppConfig = {
   sites: [
     {
       icon: "/icons/ink.svg",
-      title: "青木星",
+      title: "流墨星河",
       url: "/ink",
-      desc: "木系水墨发呆解压页",
+      desc: "流墨星河 · 水墨发呆解压页",
     },
     {
       icon: "https://cs.kasuie.cc/icons/d5570e8a-a826-47be-91b2-f6949b743111.webp!cover",

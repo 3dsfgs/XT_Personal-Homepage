@@ -169,6 +169,11 @@ type State = {
   speed: number;
   scale: number;
   rotation: number;
+  laneX: number;
+  laneY: number;
+  curve: number;
+  phase: number;
+  thickness: number;
 };
 
 function random(min: number, max: number) {
@@ -245,6 +250,17 @@ export default function HyperspeedBg({
     scene.background = new THREE.Color(preset.background);
     scene.fog = new THREE.Fog(preset.background, preset.fogNear, preset.fogFar);
 
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.32);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(preset.accentColor, 1.2);
+    keyLight.position.set(-4, 6, 8);
+    scene.add(keyLight);
+
+    const rimLight = new THREE.DirectionalLight(preset.streakColor, 0.6);
+    rimLight.position.set(4, 2, -6);
+    scene.add(rimLight);
+
     const camera = new THREE.PerspectiveCamera(
       preset.fov,
       host.clientWidth / host.clientHeight,
@@ -259,28 +275,40 @@ export default function HyperspeedBg({
     const bloomPass = new EffectPass(
       camera,
       new BloomEffect({
-        intensity: 1.15,
-        luminanceThreshold: 0.16,
-        luminanceSmoothing: 0.45,
+        intensity: 0.92,
+        luminanceThreshold: 0.22,
+        luminanceSmoothing: 0.32,
       })
     );
     bloomPass.renderToScreen = true;
     composer.addPass(bloomPass);
 
+    const roadGeometry = new THREE.PlaneGeometry(
+      66,
+      preset.depth * 1.34,
+      14,
+      Math.max(48, Math.floor(preset.depth / 3))
+    );
+    roadGeometry.rotateX(-Math.PI / 2);
+    const roadPositions = roadGeometry.attributes.position as THREE.BufferAttribute;
+    const roadBasePositions = new Float32Array(roadPositions.array as Float32Array);
     const road = new THREE.Mesh(
-      new THREE.PlaneGeometry(60, preset.depth * 1.25),
-      new THREE.MeshBasicMaterial({
+      roadGeometry,
+      new THREE.MeshStandardMaterial({
         color: preset.roadColor,
         transparent: true,
-        opacity: 0.82,
+        opacity: 0.9,
+        roughness: 0.95,
+        metalness: 0.02,
+        emissive: preset.roadColor,
+        emissiveIntensity: 0.12,
         depthWrite: false,
       })
     );
-    road.rotation.x = -Math.PI / 2;
-    road.position.set(0, -1.85, -preset.depth * 0.48);
+    road.position.set(0, -1.9, -preset.depth * 0.46);
     scene.add(road);
 
-    const streakGeometry = new THREE.BoxGeometry(0.05, 0.05, 1);
+    const streakGeometry = new THREE.BoxGeometry(0.05, 0.05, 2.8);
     const streakMesh = new THREE.InstancedMesh(
       streakGeometry,
       new THREE.MeshBasicMaterial({
@@ -295,7 +323,7 @@ export default function HyperspeedBg({
     streakMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     scene.add(streakMesh);
 
-    const sideGeometry = new THREE.BoxGeometry(0.02, 0.14, 0.8);
+    const sideGeometry = new THREE.BoxGeometry(0.02, 0.14, 1.2);
     const sideMesh = new THREE.InstancedMesh(
       sideGeometry,
       new THREE.MeshBasicMaterial({
@@ -309,6 +337,21 @@ export default function HyperspeedBg({
     );
     sideMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     scene.add(sideMesh);
+
+    const laneGeometry = new THREE.BoxGeometry(0.11, 0.03, 2.1);
+    const laneMesh = new THREE.InstancedMesh(
+      laneGeometry,
+      new THREE.MeshBasicMaterial({
+        color: preset.accentColor,
+        transparent: true,
+        opacity: 0.74,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }),
+      Math.max(96, Math.floor(preset.depth * 0.85))
+    );
+    laneMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    scene.add(laneMesh);
 
     const stars = new THREE.Points(
       new THREE.BufferGeometry(),
@@ -330,6 +373,7 @@ export default function HyperspeedBg({
     const clock = new THREE.Clock();
     const streakStates: State[] = [];
     const sideStates: State[] = [];
+    const laneStates: State[] = [];
     const starState: Array<{ x: number; y: number; z: number; speed: number }> =
       [];
     const starPositions = new Float32Array(preset.starCount * 3);
@@ -347,41 +391,85 @@ export default function HyperspeedBg({
       dummy.scale.set(
         xScale * state.scale,
         yScale * state.scale,
-        zScale * state.scale
+        zScale * state.scale * state.thickness
       );
       dummy.updateMatrix();
       mesh.setMatrixAt(index, dummy.matrix);
     };
 
     const spawnStreak = (index: number, initial = false): State => {
+      const laneProgress =
+        preset.streakCount <= 1 ? 0.5 : index / (preset.streakCount - 1);
+      const laneX = (laneProgress - 0.5) * preset.spreadX * 1.55;
+      const laneBand = Math.sin(laneProgress * Math.PI * 2.2) * preset.spreadY * 0.08;
       const state = {
-        x: random(-preset.spreadX, preset.spreadX),
-        y: random(-preset.spreadY, preset.spreadY),
+        x: laneX,
+        y: laneBand,
         z: initial
           ? random(-preset.depth, preset.depth * 0.2)
           : -preset.depth - Math.random() * preset.depth * 0.35,
         speed: preset.baseSpeed + random(-preset.speedSpread, preset.speedSpread),
-        scale: random(0.7, 1.65),
+        scale: random(0.82, 1.55),
         rotation: random(-0.18, 0.18),
+        laneX,
+        laneY: laneBand,
+        curve: random(0.18, 0.6),
+        phase: random(0, Math.PI * 2),
+        thickness: random(0.9, 1.4),
       };
-      applyState(streakMesh, index, state, 0.05, 0.05, 1);
+      applyState(streakMesh, index, state, 0.055, 0.055, 1.05);
       return state;
     };
 
     const spawnSide = (index: number, initial = false): State => {
       const direction = index % 2 === 0 ? -1 : 1;
+      const band = index / Math.max(1, preset.sideCount - 1);
+      const laneX =
+        direction *
+        (preset.spreadX * (1.02 + band * 0.26) + random(-0.18, 0.18));
+      const laneY = random(-1.2, 0.8);
       const state = {
-        x: direction * random(preset.spreadX * 1.06, preset.spreadX * 1.35),
-        y: random(-1.2, 0.8),
+        x: laneX,
+        y: laneY,
         z: initial
           ? random(-preset.depth, preset.depth * 0.1)
           : -preset.depth - Math.random() * preset.depth * 0.25,
         speed:
           preset.baseSpeed + random(-preset.speedSpread * 0.6, preset.speedSpread * 0.6),
-        scale: random(0.6, 1.5),
+        scale: random(0.72, 1.35),
         rotation: random(-0.05, 0.05),
+        laneX,
+        laneY,
+        curve: random(0.04, 0.2),
+        phase: random(0, Math.PI * 2),
+        thickness: random(0.82, 1.12),
       };
-      applyState(sideMesh, index, state, 0.02, 0.14, 0.8);
+      applyState(sideMesh, index, state, 0.022, 0.14, 0.9);
+      return state;
+    };
+
+    const spawnLane = (index: number, initial = false): State => {
+      const laneProgress =
+        laneMesh.count <= 1 ? 0.5 : index / (laneMesh.count - 1);
+      const laneX = Math.sin(laneProgress * Math.PI * 3.2) * 0.68;
+      const laneY = -1.48 + Math.sin(laneProgress * Math.PI * 2.6) * 0.22;
+      const state = {
+        x: laneX,
+        y: laneY,
+        z: initial
+          ? random(-preset.depth, preset.depth * 0.18)
+          : -preset.depth - Math.random() * preset.depth * 0.28,
+        speed:
+          preset.baseSpeed + random(-preset.speedSpread * 0.35, preset.speedSpread * 0.35),
+        scale: random(0.84, 1.2),
+        rotation: random(-0.03, 0.03),
+        laneX,
+        laneY,
+        curve: random(0.14, 0.36),
+        phase: random(0, Math.PI * 2),
+        thickness: random(0.82, 1.08),
+      };
+      applyState(laneMesh, index, state, 0.11, 0.03, 1.0);
       return state;
     };
 
@@ -390,6 +478,9 @@ export default function HyperspeedBg({
     }
     for (let i = 0; i < preset.sideCount; i += 1) {
       sideStates.push(spawnSide(i, true));
+    }
+    for (let i = 0; i < laneMesh.count; i += 1) {
+      laneStates.push(spawnLane(i, true));
     }
     for (let i = 0; i < preset.starCount; i += 1) {
       starState.push({
@@ -426,10 +517,12 @@ export default function HyperspeedBg({
     let speedBoost = 0;
     let speedTarget = 0;
     let fovTarget = preset.fov;
+    let impactPulse = 0;
 
     const onPointerDown = () => {
-      speedTarget = 1.6;
-      fovTarget = preset.fov + 10;
+      speedTarget = 2.1;
+      fovTarget = preset.fov + 14;
+      impactPulse = 1;
     };
     const onPointerUp = () => {
       speedTarget = 0;
@@ -445,7 +538,10 @@ export default function HyperspeedBg({
       const delta = Math.min(clock.getDelta(), 0.033);
       const speedLerp = Math.exp(-(-60 * Math.log2(1 - 0.1)) * delta);
       speedBoost = lerp(speedBoost, speedTarget, speedLerp);
+      impactPulse = lerp(impactPulse, 0, 0.07);
       const time = clock.elapsedTime + speedBoost;
+      const flowTime = time * 0.7;
+      const motionPulse = 1 + speedBoost * 0.16 + impactPulse * 0.5;
 
       pointerCurrent.x = lerp(pointerCurrent.x, pointerTarget.x, 0.05);
       pointerCurrent.y = lerp(pointerCurrent.y, pointerTarget.y, 0.05);
@@ -464,27 +560,92 @@ export default function HyperspeedBg({
       camera.fov = lerp(camera.fov, fovTarget, 0.08);
       camera.updateProjectionMatrix();
 
+      for (let i = 0; i < roadBasePositions.length; i += 3) {
+        const baseX = roadBasePositions[i];
+        const baseZ = roadBasePositions[i + 2];
+        const centerFalloff = 1 - Math.min(1, Math.abs(baseX) / 30);
+        const depthPhase = baseZ * 0.06;
+        roadPositions.array[i + 1] =
+          Math.sin(depthPhase + flowTime * 1.45 + baseX * 0.14) *
+            (0.16 + impactPulse * 0.14 + speedBoost * 0.02) *
+            centerFalloff +
+          Math.sin(baseX * 0.42 + flowTime * 2.1) * 0.03;
+      }
+      roadPositions.needsUpdate = true;
+      roadGeometry.computeVertexNormals();
+
       const resetThreshold = 22;
       const farPlane = preset.depth * 0.55;
 
       streakStates.forEach((state, index) => {
         state.z += delta * state.speed;
-        state.x += Math.sin(state.z * 0.008 + index * 0.19) * delta * 0.26;
+        const progress = (state.z + preset.depth) / (preset.depth + resetThreshold);
+        const ribbon =
+          Math.sin(progress * Math.PI * 1.65 + flowTime + state.phase) *
+          state.curve *
+          motionPulse;
+        state.x =
+          state.laneX +
+          ribbon * 1.05 +
+          Math.sin(state.z * 0.012 + flowTime * 1.15 + state.phase) *
+            state.curve *
+            motionPulse *
+            0.28;
+        state.y =
+          state.laneY +
+          Math.cos(progress * Math.PI * 1.18 + flowTime * 1.12 + state.phase) *
+            state.curve *
+            motionPulse *
+            0.62;
         if (state.z > resetThreshold) {
           streakStates[index] = spawnStreak(index, false);
           return;
         }
-        applyState(streakMesh, index, state, 0.05, 0.05, 1);
+        applyState(streakMesh, index, state, 0.07, 0.06, 1.08);
       });
 
       sideStates.forEach((state, index) => {
         state.z += delta * state.speed;
-        state.y += Math.cos(state.z * 0.01 + index * 0.17) * delta * 0.08;
+        const progress = (state.z + preset.depth) / (preset.depth + resetThreshold);
+        state.x =
+          state.laneX +
+          Math.sin(progress * Math.PI * 1.15 + flowTime + state.phase) *
+            state.curve *
+            motionPulse *
+            0.55;
+        state.y =
+          state.laneY +
+          Math.cos(state.z * 0.01 + flowTime * 0.9 + state.phase) *
+            state.curve *
+            motionPulse *
+            0.42;
         if (state.z > resetThreshold) {
           sideStates[index] = spawnSide(index, false);
           return;
         }
-        applyState(sideMesh, index, state, 0.02, 0.14, 0.8);
+        applyState(sideMesh, index, state, 0.028, 0.16, 1.0);
+      });
+
+      laneStates.forEach((state, index) => {
+        state.z += delta * (state.speed * 1.03);
+        const progress = (state.z + preset.depth) / (preset.depth + resetThreshold);
+        const laneWave =
+          state.curve * (0.78 + speedBoost * 0.08 + impactPulse * 0.18);
+        state.x =
+          state.laneX +
+          Math.sin(progress * Math.PI * 1.5 + flowTime * 1.28 + state.phase) *
+            laneWave *
+            1.1;
+        state.y =
+          state.laneY +
+          Math.cos(progress * Math.PI * 1.42 + flowTime * 1.82 + state.phase) *
+            laneWave *
+            0.82;
+        if (state.z > resetThreshold) {
+          laneStates[index] = spawnLane(index, false);
+          return;
+        }
+        applyState(laneMesh, index, state, 0.12, 0.038, 1.05);
       });
 
       starState.forEach((star, index) => {
@@ -502,6 +663,7 @@ export default function HyperspeedBg({
       starAttr.needsUpdate = true;
       streakMesh.instanceMatrix.needsUpdate = true;
       sideMesh.instanceMatrix.needsUpdate = true;
+      laneMesh.instanceMatrix.needsUpdate = true;
 
       composer.render(time);
       frameRef.current = window.requestAnimationFrame(update);

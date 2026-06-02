@@ -12,13 +12,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { variants } from "@/lib/motion";
 import { Controller } from "../controller/Controller";
-import dynamic from "next/dynamic";
-import { HYPERSPEED_PRESET_COUNT } from "./HyperspeedBg";
-
-const HyperspeedBg = dynamic(() => import("./HyperspeedBg"), {
-  ssr: false,
-  loading: () => null,
-});
+import HyperspeedBg, { HYPERSPEED_PRESET_COUNT } from "./HyperspeedBg";
 
 const HYPERSPEED_STORAGE_KEY = "remio-home:hyperspeed-preset";
 
