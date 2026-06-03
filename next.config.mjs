@@ -9,7 +9,7 @@
 import nextPWA from "next-pwa";
 
 const isProd = process.env.NODE_ENV === "production";
-
+const isWindows = process.platform === "win32";
 
 const withPWA = nextPWA({
   dest: "public",
@@ -19,17 +19,11 @@ const withPWA = nextPWA({
 });
 
 const nextConfig = {
-  // 🌟 修改点 1：去掉之前的 isWindows 判断。
-  // 在最新的 Next.js 环境以及 Cloudflare 全栈（opennextjs-cloudflare）环境下，
-  // 保持默认的动态服务器输出，不显式指定 standalone。
-  output: undefined, 
-
+  output: isWindows ? undefined : "standalone",
   eslint: {
     ignoreDuringBuilds: true,
   },
   webpack: (config, { isServer }) => {
-    // 🌟 核心保留：这里对于你的 WebGL / 几何引擎非常关键！
-    // 确保在浏览器端打包时，不解析 Node.js 的文件系统 'fs' 模块，防止打包报错
     if (!isServer) {
       config.resolve.fallback = {
         fs: false,

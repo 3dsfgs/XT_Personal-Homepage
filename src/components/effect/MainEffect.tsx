@@ -79,7 +79,7 @@ export function MainEffect({
     }
   }, [audio, bgStyle]);
 
-  useEffect(() => {
+    useEffect(() => {
     if (bgStyle !== "hyperspeed") return;
 
     if (typeof hyperspeedPresetIndex === "number") {
@@ -95,13 +95,13 @@ export function MainEffect({
     const parsedPreset =
       storedPreset === null ? Number.NaN : Number(storedPreset);
 
-    if (Number.isFinite(parsedPreset)) {
-      const nextPreset =
-        (Math.abs(parsedPreset) + 1) % HYPERSPEED_PRESET_COUNT;
-      window.localStorage.setItem(HYPERSPEED_STORAGE_KEY, String(nextPreset));
-      setHyperspeedPreset(nextPreset);
-      return;
-    }
+    //if (Number.isFinite(parsedPreset)) {
+    //const nextPreset =
+    //(Math.abs(parsedPreset) + 1) % HYPERSPEED_PRESET_COUNT;
+    // window.localStorage.setItem(HYPERSPEED_STORAGE_KEY, String(nextPreset));
+    //setHyperspeedPreset(nextPreset);
+    //return;
+    // }
 
     const nextPreset = Math.floor(Math.random() * HYPERSPEED_PRESET_COUNT);
     window.localStorage.setItem(HYPERSPEED_STORAGE_KEY, String(nextPreset));
