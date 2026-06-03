@@ -22,6 +22,7 @@ const withPWA = nextPWA({
 const nextConfig = {
   output: isWindows ? undefined : "standalone",
   //output: "export", // 核心修改：改为静态导出
+  serverExternalPackages: ["pg"],
   eslint: {
     ignoreDuringBuilds: true,
   },
