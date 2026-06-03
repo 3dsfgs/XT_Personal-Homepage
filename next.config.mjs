@@ -18,8 +18,10 @@ const withPWA = nextPWA({
   disable: !isProd,
 });
 
+
 const nextConfig = {
-  output: isWindows ? undefined : "standalone",
+  //output: isWindows ? undefined : "standalone",
+  output: "export", // 核心修改：改为静态导出
   eslint: {
     ignoreDuringBuilds: true,
   },
