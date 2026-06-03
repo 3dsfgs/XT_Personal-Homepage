@@ -8,8 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "lint-staged": "lint-staged --allow-empty",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "opennext": "opennextjs-cloudflare"
   },
+
   "author": "kasuie <i@kasuie.cc>",
   "license": "MIT",
   "dependencies": {
