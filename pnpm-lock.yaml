@@ -56,6 +56,9 @@ importers:
       next-themes:
         specifier: ^0.3.0
         version: 0.3.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      opennextjs-cloudflare:
+        specifier: ^1.0.0
+        version: 1.0.0
       pg:
         specifier: ^8.14.1
         version: 8.14.1
@@ -3212,6 +3215,9 @@ packages:
   onetime@6.0.0:
     resolution: {integrity: sha512-1FlR+gjXK7X+AsAHso35MnyN5KqGwJRi/31ft6x0M194ht7S+rWAvd7PHss9xSKMzE0asv1pyIHaJYq+BbacAQ==}
     engines: {node: '>=12'}
+
+  opennextjs-cloudflare@1.0.0:
+    resolution: {integrity: sha512-udcoJaxZyMUp+uYt5Lumz0b+uuCsbnQP8jG7kexZltHaO9ANxfPBhrju4MzkrUPUb3ePox9nQ7Bo2e9Wbeux9g==}
 
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
@@ -8076,6 +8082,8 @@ snapshots:
   onetime@6.0.0:
     dependencies:
       mimic-fn: 4.0.0
+
+  opennextjs-cloudflare@1.0.0: {}
 
   optionator@0.9.4:
     dependencies:
