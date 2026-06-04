@@ -2,7 +2,7 @@ import { defineCloudflareConfig } from "@opennextjs/cloudflare";
 
 export default defineCloudflareConfig({
   dangerous: {
-    esbuild: {
+    buildConfig: {
       external: ["pg-cloudflare"]
     },
   },
