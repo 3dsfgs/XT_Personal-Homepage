@@ -4,6 +4,6 @@ export default defineCloudflareConfig({
   dangerous: {
     esbuild: {
       external: ["pg-cloudflare"]
-    }
-  }
+    },
+  },
 } as any);
