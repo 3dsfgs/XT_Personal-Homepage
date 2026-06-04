@@ -1,7 +1,8 @@
 #:schema node_modules/wrangler/config-schema.json
 name = "pengxutao-home"
-compatibility_date = "2026-6-01"
+# 修复日期格式（标准 YYYY-MM-DD）
+compatibility_date = "2026-06-01"
 compatibility_flags = [ "nodejs_compat" ]
 
-# 告诉 Cloudflare Pages 静态资源的输出目录
-pages_build_output_dir = ".open-next/cloudflare"
+# 核心修复：正确的静态资源/服务入口目录
+pages_build_output_dir = ".open-next"
