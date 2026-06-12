@@ -48,14 +48,14 @@
     "showFrom": true,
     "style": "desc",
     "gapDelay": 0.05,
-    "content": "00后 · C++ 后端工程师",
-    "desc": "偏后端、性能和工程化，也会折腾前端体验"
+    "content": "00后 · 程序员",
+    "desc": "CAM、CAD | 喜欢做很酷的事情"
   },
   "links": [
     {
       "title": "email",
       "color": "#fd3232",
-      "url": "mailto:pengxutao180@163.com",
+      "url": "mailto:3051798796@qq.com",
       "icon": "email"
     },
     {
@@ -76,7 +76,7 @@
       "icon": "/icons/home.svg",
       "title": "个人博客",
       "url": "/blog",
-      "desc": "站内 Markdown 博客"
+      "desc": "Markdown 博客"
     },
     {
       "icon": "/icons/2D.svg",
