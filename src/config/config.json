@@ -53,16 +53,22 @@
   },
   "links": [
     {
+      "title": "steam",
+      "color": "#000000",
+      "url": "https://steamcommunity.com/app/105600",
+      "icon": "steam"
+    },
+    {
       "title": "email",
       "color": "#fd3232",
       "url": "mailto:3051798796@qq.com",
       "icon": "email"
     },
     {
-      "title": "steam",
+      "title": "github",
       "color": "#000000",
-      "url": "https://steamcommunity.com/app/105600",
-      "icon": "steam"
+      "url": "https://github.com/3dsfgs",
+      "icon": "github"
     }
   ],
   "sites": [
@@ -79,10 +85,10 @@
       "desc": "Markdown 博客"
     },
     {
-      "icon": "/icons/2D.svg",
-      "title": "Mio 导航",
-      "url": "https://nav.kasuie.cc",
-      "desc": "Mio 网站导航"
+      "icon": "/icons/link_.svg",
+      "title": "常用链接",
+      "url": "/friendship_links",
+      "desc": "常用的一些网址"
     }
   ],
   "sitesConfig": {
