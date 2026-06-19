@@ -73,6 +73,15 @@ export default function BlogPage() {
             “坚冰还盖着北海的时候，我看见了怒放的梅花”
           </p>
         </section>
+        {/* 返回主页按钮 */}
+        <footer className="mt-16 text-center">
+          <a
+            href="/"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+          >
+            ← 返回主页
+          </a>
+        </footer>
       </div>
     </main>
   );

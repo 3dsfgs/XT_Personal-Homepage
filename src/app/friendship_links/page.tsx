@@ -58,7 +58,7 @@ export default function FriendshipLinks() {
         {/* 头部标题 */}
         <header className="mb-12 text-center md:text-left">
           <h1 className="text-3xl md:text-4xl font-bold tracking-wide mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-            友情链接
+            常用链接
           </h1>
           <p className="text-gray-400 text-sm">常用的一些网址与推荐内容</p>
         </header>
