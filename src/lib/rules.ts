@@ -465,7 +465,7 @@ const subTitleRules: RuleItem[] = [
       min: 3,
       step: "0.5",
     },
-    default: 10,
+    default: 20,
   },
   {
     controlKey: "select",

@@ -38,7 +38,7 @@
     "style": "",
     "istTransition": true
   },
-  "subTitle": "坚冰还盖着北海的时候，我看见了怒放的梅花",
+  "subTitle": "https://v1.hitokoto.cn?c=a&c=b&c=c",
   "subTitleConfig": {
     "typing": true,
     "loading": "wave",
@@ -47,6 +47,7 @@
     "typingCursor": true,
     "showFrom": true,
     "style": "desc",
+    "typingGap": 12,
     "gapDelay": 0.05,
     "content": "00后 · 独立开发者",
     "desc": "CAM、CAD | 喜欢做很酷的事情"

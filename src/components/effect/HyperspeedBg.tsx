@@ -35,6 +35,7 @@ export const HYPERSPEED_PRESET_COUNT = 6;
 
 const PRESETS: HyperspeedPreset[] = [
   {
+    // 红色
     background: 0x040407,
     fogNear: 18,
     fogFar: 235,
@@ -56,6 +57,7 @@ const PRESETS: HyperspeedPreset[] = [
     depth: 232,
   },
   {
+    // 青色
     background: 0x070611,
     fogNear: 20,
     fogFar: 228,
@@ -77,6 +79,7 @@ const PRESETS: HyperspeedPreset[] = [
     depth: 224,
   },
   {
+    // 绿色
     background: 0x020806,
     fogNear: 18,
     fogFar: 230,
@@ -98,6 +101,7 @@ const PRESETS: HyperspeedPreset[] = [
     depth: 234,
   },
   {
+    // 橙色
     background: 0x090502,
     fogNear: 22,
     fogFar: 242,
@@ -119,6 +123,7 @@ const PRESETS: HyperspeedPreset[] = [
     depth: 216,
   },
   {
+    // 白色
     background: 0x010101,
     fogNear: 20,
     fogFar: 212,
@@ -140,6 +145,7 @@ const PRESETS: HyperspeedPreset[] = [
     depth: 240,
   },
   {
+    // 蓝色
     background: 0x020b10,
     fogNear: 18,
     fogFar: 220,

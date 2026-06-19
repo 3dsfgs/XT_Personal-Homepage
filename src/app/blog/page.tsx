@@ -69,6 +69,9 @@ export default function BlogPage() {
           <p className="mt-2">
             “自信人生二百年，会当水击三千里”
           </p>
+          <p className="mt-2">
+            “坚冰还盖着北海的时候，我看见了怒放的梅花”
+          </p>
         </section>
       </div>
     </main>
