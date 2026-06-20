@@ -3,7 +3,7 @@ import { getBlogPosts } from "@/lib/blog";
 
 export const metadata = {
   title: "博客 | remio-home",
-  description: "南明的站内 Markdown 博客",
+  description: "小栩的站内 Markdown 博客",
 };
 
 export default function BlogPage() {
@@ -17,7 +17,7 @@ export default function BlogPage() {
             Blog
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-5xl">
-            南明的博客
+            小栩的博客
           </h1>
           <p className="mt-4 max-w-3xl text-sm leading-7 text-[rgba(var(--mio-text-default),0.72)] md:text-base">
             记录实践、发呆、思考；欢迎交流~
@@ -61,7 +61,15 @@ export default function BlogPage() {
             </div>
           )}
         </section>
-
+        {/* 返回主页按钮 */}
+        <footer className="mt-16 text-center">
+          <a
+            href="/"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+          >
+            ← 返回主页
+          </a>
+        </footer>
         <section className="rounded-[1.75rem] border border-white/10 bg-[rgba(var(--mio-main),0.42)] p-6 text-sm leading-7 text-[rgba(var(--mio-text-default),0.72)] shadow-mio-link backdrop-blur-xl">
           <p>
             “尽吾志而不能至者，可以无悔矣”
@@ -73,15 +81,6 @@ export default function BlogPage() {
             “坚冰还盖着北海的时候，我看见了怒放的梅花”
           </p>
         </section>
-        {/* 返回主页按钮 */}
-        <footer className="mt-16 text-center">
-          <a
-            href="/"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-          >
-            ← 返回主页
-          </a>
-        </footer>
       </div>
     </main>
   );
