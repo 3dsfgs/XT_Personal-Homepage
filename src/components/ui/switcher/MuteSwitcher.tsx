@@ -29,7 +29,7 @@ export const MuteSwitcher = ({
   // }, [onSwitch]);
 
   const onChange = () => {
-    if (checked) {
+    if (!checked) {
       setChecked(true);
       onSwitch?.(true);
     } else {
