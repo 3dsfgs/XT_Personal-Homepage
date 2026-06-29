@@ -30,11 +30,11 @@ export const MuteSwitcher = ({
 
   const onChange = () => {
     if (checked) {
-      setChecked(false);
-      onSwitch?.(false);
-    } else {
       setChecked(true);
       onSwitch?.(true);
+    } else {
+      setChecked(false);
+      onSwitch?.(false);
     }
   };
 
