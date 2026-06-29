@@ -22,19 +22,19 @@ export const MuteSwitcher = ({
   onSwitch?: Function;
   motions?: object;
 }) => {
-  const [checked, setChecked] = useState(true);
+  const [checked, setChecked] = useState(false);
 
   // useEffect(() => {
   //   setChecked(true);
   // }, [onSwitch]);
 
   const onChange = () => {
-    if (!checked) {
-      setChecked(true);
-      onSwitch?.(true);
-    } else {
+    if (checked) {
       setChecked(false);
       onSwitch?.(false);
+    } else {
+      setChecked(true);
+      onSwitch?.(true);
     }
   };
 

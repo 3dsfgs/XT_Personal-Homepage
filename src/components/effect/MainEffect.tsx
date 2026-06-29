@@ -247,7 +247,7 @@ export function MainEffect({
   };
 
   const renderAudio = (url: string) => {
-    return <audio ref={audioRef} src={url} />;
+    return <audio ref={audioRef} src={url} loop />;
   };
 
   const renderIframe = (

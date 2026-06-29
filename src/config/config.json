@@ -21,6 +21,7 @@
     ],
     "bgStyle": "hyperspeed",
     "blur": "",
+    "audio": "/icons/music.aac",  
     "cardOpacity": 0.1,
     "carousel": true,
     "carouselGap": 5,
