@@ -19,7 +19,7 @@ tags: [简介]
 
 ## 独立开发者
 
-- [github](https://github.com/3dsfgs)
+- [点击文字查看开源项目](https://github.com/3dsfgs)
 - 相关内容：渲染、几何 等
 
 ## 很久之前发生的事情... 可惜...
@@ -46,7 +46,7 @@ tags: [简介]
 
 ## Independent Developer
 
--[github](https://github.com/3dsfgs)
+-[Click on the text to view open source projects](https://github.com/3dsfgs)
 -Expertise: Rendering, Geometry and related fields
 
 ## Events from long ago... What a pity...
