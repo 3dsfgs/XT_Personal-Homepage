@@ -3,7 +3,7 @@ import { getBlogPosts } from "@/lib/blog";
 
 export const metadata = {
   title: "博客 | remio-home",
-  description: "小栩的站内 Markdown 博客",
+  description: "昱安的站内 Markdown 博客",
 };
 
 export default function BlogPage() {
@@ -17,7 +17,7 @@ export default function BlogPage() {
             Blog
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-5xl">
-            小栩的博客
+            昱安的博客
           </h1>
           <p className="mt-4 max-w-3xl text-sm leading-7 text-[rgba(var(--mio-text-default),0.72)] md:text-base">
             记录实践、发呆、思考；欢迎交流~

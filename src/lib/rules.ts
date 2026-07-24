@@ -655,7 +655,7 @@ export const AppRules = [
 
 export const defaultAppConfig: AppConfig = {
   name: "南明",
-  favicon: "/favicon.ico",
+  favicon: "/001.ico",
   keywords: "南明,个人主页,流墨星河,Mio导航,C++后端,个人博客,主页,记录,博客",
   description: "南明的个人主页，记录、实验和发呆",
   domain: "",
