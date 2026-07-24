@@ -23,7 +23,7 @@ export async function generateMetadata() {
     keywords: appConfig.keywords,
     manifest: "/api/manifest",
     icons: {
-      icon: appConfig.favicon || "/001.ico",
+      icon: appConfig.favicon || "/icons/favicon64.png",
       shortcut: "/icons/favicon192.png",
       apple: "/icons/favicon192.png",
     },
