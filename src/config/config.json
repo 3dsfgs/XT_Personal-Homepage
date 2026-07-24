@@ -1,6 +1,6 @@
 {
   "name": "昱安",
-  "favicon": "001.ico",
+  "favicon": "/001.ico",
   "keywords": "昱安,个人主页,流墨星河,Mio导航,C++后端,个人博客,主页,记录,博客",
   "description": "昱安的个人主页，记录、实验和发呆",
   "avatarConfig": {
