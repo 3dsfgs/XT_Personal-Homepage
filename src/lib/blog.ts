@@ -34,7 +34,11 @@ function renderInline(value: string) {
   text = text.replace(
     /!\[([^\]]*)\]\(([^)]+)\)/g,
     (_match, alt: string, src: string) => {
-      return `<img src="${src}" alt="${alt}" style="width: 60% !important; height: auto !important; display: block; margin: 1.25rem 0; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);" />`;
+      //return `<img src="${src}" alt="${alt}" style="width: 60% !important; height: auto !important; display: block; margin: 1.25rem 0; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);" />`;
+      return `<img
+  src="${src}"
+  alt="${alt}"
+  class="block h-auto w-full md:w-[60%] my-5 mx-auto rounded-xl border border-white/10 shadow-md"/>`;
     }
   );
   // 2. 解析普通超链接 [label](href) （保持你原本的逻辑不变）
