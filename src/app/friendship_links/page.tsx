@@ -2,12 +2,14 @@
  * @Description: 友情链接静态页面
  */
 import React from "react";
+import Link from "next/link";
 
 // 定义链接数据结构
 interface LinkItem {
   name: string;
   url: string;
   desc: string;
+  internal?: boolean;
 }
 
 interface LinkGroup {
@@ -50,6 +52,17 @@ export default function FriendshipLinks() {
         { name: "Easy-Vibe 知识库", url: "https://datawhalechina.github.io/easy-vibe/zh-cn/appendix/", desc: "出自DataWhale,涵盖从计算机基础、前端、后端、系统设计、基础设施到人工智能的完整知识体系" },
       ],
     },
+    {
+      category: "互动探索",
+      links: [
+        {
+          name: "爱与关系探索",
+          url: "/friendship_links/love",
+          desc: "人际依附风格、26 种爱情故事地图与八维爱情风格图。即时探索，不保存答题记录。",
+          internal: true,
+        },
+      ],
+    },
   ];
 
   return (
@@ -73,27 +86,30 @@ export default function FriendshipLinks() {
             
             {/* 卡片栅格布局 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2">
-              {group.links.map((link, lIdx) => (
-                <a
-                  key={lIdx}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block p-4 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all duration-300 transform hover:-translate-y-1 group"
-                >
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-medium text-gray-200 group-hover:text-blue-400 transition-colors">
-                      {link.name}
-                    </h3>
-                    <span className="text-xs text-gray-500 group-hover:text-blue-400 transition-colors">
-                      ↗
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-400 line-clamp-2">
-                    {link.desc}
-                  </p>
-                </a>
-              ))}
+              {group.links.map((link, lIdx) => {
+                const CardLink = link.internal ? Link : "a";
+                return (
+                  <CardLink
+                    key={lIdx}
+                    href={link.url}
+                    target={link.internal ? undefined : "_blank"}
+                    rel={link.internal ? undefined : "noopener noreferrer"}
+                    className="block p-4 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 hover:border-blue-500/50 hover:bg-white/10 transition-all duration-300 transform hover:-translate-y-1 group"
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <h3 className="font-medium text-gray-200 group-hover:text-blue-400 transition-colors">
+                        {link.name}
+                      </h3>
+                      <span className="text-xs text-gray-500 group-hover:text-blue-400 transition-colors">
+                        ↗
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-400 line-clamp-2">
+                      {link.desc}
+                    </p>
+                  </CardLink>
+                );
+              })}
             </div>
           </section>
         ))}
