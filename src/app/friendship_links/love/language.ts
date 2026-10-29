@@ -5,5 +5,5 @@ const phraseTraditional: Record<string, string> = {
 };
 export function toTraditional(input: string): string {
   const fixed = input.replace(/关系|联系|台湾|搜集|里面/g, word => phraseTraditional[word] ?? word);
-  return [...fixed].map(ch => simplifiedToTraditional[ch] ?? ch).join('');
+  return fixed.split('').map(ch => simplifiedToTraditional[ch] ?? ch).join('');
 }
