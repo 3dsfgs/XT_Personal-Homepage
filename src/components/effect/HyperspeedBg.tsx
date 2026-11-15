@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import {
   BloomEffect,
@@ -190,6 +190,13 @@ function lerp(current: number, target: number, factor: number) {
   return current + (target - current) * factor;
 }
 
+/** 颜色在一帧内向目标平滑过渡（原地修改，避免每帧分配新对象） */
+function lerpColor(current: THREE.Color, target: THREE.Color, factor: number) {
+  current.r += (target.r - current.r) * factor;
+  current.g += (target.g - current.g) * factor;
+  current.b += (target.b - current.b) * factor;
+}
+
 export default function HyperspeedBg({
   presetIndex = 0,
   onPresetChange,
@@ -200,34 +207,26 @@ export default function HyperspeedBg({
   const hostRef = useRef<HTMLDivElement>(null);
   const runningRef = useRef(true);
   const frameRef = useRef<number | null>(null);
-  const transitionTimerRef = useRef<number | null>(null);
   const onPresetChangeRef = useRef(onPresetChange);
-  const [transitioning, setTransitioning] = useState(false);
-
+  const redrawRef = useRef<(() => void) | null>(null);
   const preset = useMemo(
     () => PRESETS[Math.abs(presetIndex) % PRESETS.length],
     [presetIndex]
   );
+
+  // 风格切换只更新目标值，由渲染循环里的 lerp 平滑过渡，场景不重建
+  const presetRef = useRef(preset);
+  const presetIndexRef = useRef(presetIndex);
 
   useEffect(() => {
     onPresetChangeRef.current = onPresetChange;
   }, [onPresetChange]);
 
   useEffect(() => {
-    setTransitioning(true);
-    if (transitionTimerRef.current) {
-      window.clearTimeout(transitionTimerRef.current);
-    }
-    transitionTimerRef.current = window.setTimeout(() => {
-      setTransitioning(false);
-    }, 220);
-
-    return () => {
-      if (transitionTimerRef.current) {
-        window.clearTimeout(transitionTimerRef.current);
-      }
-    };
-  }, [presetIndex]);
+    presetRef.current = preset;
+    presetIndexRef.current = presetIndex;
+    redrawRef.current?.();
+  }, [preset, presetIndex]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -235,13 +234,15 @@ export default function HyperspeedBg({
 
     runningRef.current = true;
     host.replaceChildren();
+    // 几何数量取首次风格；之后切换只改颜色 / 雾 / 视角，不重建场景
+    const preset = presetRef.current;
 
     const renderer = new THREE.WebGLRenderer({
       antialias: false,
       alpha: true,
       powerPreference: "high-performance",
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setSize(host.clientWidth, host.clientHeight, false);
     renderer.setClearColor(preset.background, 1);
     renderer.domElement.style.width = "100%";
@@ -249,7 +250,7 @@ export default function HyperspeedBg({
     renderer.domElement.style.display = "block";
     renderer.domElement.style.position = "absolute";
     renderer.domElement.style.inset = "0";
-    renderer.domElement.style.touchAction = "none";
+    renderer.domElement.style.pointerEvents = "none";
     host.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
@@ -314,6 +315,50 @@ export default function HyperspeedBg({
     road.position.set(0, -1.9, -preset.depth * 0.46);
     scene.add(road);
 
+    // A triangulated surface shares the road's geometry: light reveals its topology.
+    const scanMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        uColor: { value: new THREE.Color(preset.streakColor) },
+        uScanX: { value: 0 },
+        uSweepZ: { value: -80 },
+        uActivity: { value: 0 },
+      },
+      vertexShader: `
+        varying vec3 vWorld;
+        void main() {
+          vec4 world = modelMatrix * vec4(position, 1.0);
+          vWorld = world.xyz;
+          gl_Position = projectionMatrix * viewMatrix * world;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        uniform float uScanX;
+        uniform float uSweepZ;
+        uniform float uActivity;
+        varying vec3 vWorld;
+        void main() {
+          float cursor = exp(-pow((vWorld.x - uScanX) / 3.5, 2.0));
+          float sweep = exp(-pow((vWorld.z - uSweepZ) / 5.0, 2.0));
+          float depth = 1.0 - smoothstep(25.0, 160.0, -vWorld.z);
+          float nearFade = smoothstep(4.0, 22.0, -vWorld.z);
+          float edges = 1.0 - smoothstep(16.0, 33.0, abs(vWorld.x));
+          float alpha = (0.008 + cursor * uActivity * 0.1 + sweep * 0.18) * depth * nearFade * edges;
+          gl_FragColor = vec4(uColor, alpha);
+        }
+      `,
+      wireframe: true,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+    });
+    const scanMesh = new THREE.Mesh(roadGeometry, scanMaterial);
+    scanMesh.position.copy(road.position);
+    scanMesh.position.y += 0.015;
+    scene.add(scanMesh);
+
     const streakGeometry = new THREE.BoxGeometry(0.05, 0.05, 2.8);
     const streakMesh = new THREE.InstancedMesh(
       streakGeometry,
@@ -377,6 +422,11 @@ export default function HyperspeedBg({
     const pointerTarget = new THREE.Vector2(0, 0);
     const pointerCurrent = new THREE.Vector2(0, 0);
     const clock = new THREE.Clock();
+    const motionPreference = matchMedia("(prefers-reduced-motion: reduce)");
+    let elapsed = 0;
+    let activity = 0;
+    let scanSweep = -160;
+
     const streakStates: State[] = [];
     const sideStates: State[] = [];
     const laneStates: State[] = [];
@@ -507,62 +557,147 @@ export default function HyperspeedBg({
       composer.setSize(width, height);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
+      if (motionPreference.matches) composer.render();
     };
 
     const pointerMove = (event: PointerEvent) => {
+      if (motionPreference.matches || event.pointerType === "touch") return;
       const rect = host.getBoundingClientRect();
       const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       const y = ((event.clientY - rect.top) / rect.height) * 2 - 1;
-      pointerTarget.set(x, -y);
+      // Increase sensitivity near the centre for short trackpad movements, then ease at the edges.
+      pointerTarget.set(Math.tanh(x * 2.4), -Math.tanh(y * 2));
+      activity = 1;
     };
 
     const pointerLeave = () => {
       pointerTarget.set(0, 0);
     };
 
+    // 风格切换的目标值：每帧向 presetRef 里的新风格平滑过渡
+    const color = (hex: number) => new THREE.Color(hex);
+    const targetBg = color(preset.background);
+    const targetRoad = color(preset.roadColor);
+    const targetStreak = color(preset.streakColor);
+    const targetSide = color(preset.sideColor);
+    const targetAccent = color(preset.accentColor);
+    const roadMaterial = road.material as THREE.MeshStandardMaterial;
+    const streakMaterial = streakMesh.material as THREE.MeshBasicMaterial;
+    const sideMaterial = sideMesh.material as THREE.MeshBasicMaterial;
+    const laneMaterial = laneMesh.material as THREE.MeshBasicMaterial;
+    const starMaterial = stars.material as THREE.PointsMaterial;
+
     let speedBoost = 0;
     let speedTarget = 0;
     let fovTarget = preset.fov;
     let impactPulse = 0;
 
-    const onPointerDown = () => {
-      speedTarget = 2.1;
-      fovTarget = preset.fov + 14;
-      impactPulse = 1;
-    };
-    const onPointerUp = () => {
+    const interactiveTarget = (target: EventTarget | null) =>
+      target instanceof Element && target.closest(
+        'a, button, input, textarea, select, summary, [role="button"], [role="dialog"], [contenteditable="true"], [data-no-background-interaction]'
+      );
+
+    // Listen through the content layer while leaving navigation and controls to their own handlers.
+    let downAt = 0;
+    let downPointer = -1;
+    const downPosition = new THREE.Vector2();
+    const resetInteraction = () => {
       speedTarget = 0;
-      fovTarget = preset.fov;
+      fovTarget = presetRef.current.fov;
+      downAt = 0;
+      downPointer = -1;
     };
-    const onClick = () => {
-      onPresetChangeRef.current?.((presetIndex + 1) % PRESETS.length);
+    const onPointerDown = (event: PointerEvent) => {
+      if (motionPreference.matches || event.button !== 0 || !event.isPrimary ||
+        event.pointerType === "touch" || interactiveTarget(event.target)) return;
+      downAt = performance.now();
+      downPointer = event.pointerId;
+      downPosition.set(event.clientX, event.clientY);
+      speedTarget = 2.1;
+      fovTarget = presetRef.current.fov + 14;
+      impactPulse = 1;
+      scanSweep = -145;
+      activity = 1;
+    };
+    const onPointerUp = (event: PointerEvent) => {
+      if (event.pointerId !== downPointer) return;
+      if (downAt && performance.now() - downAt < 240 &&
+        Math.hypot(event.clientX - downPosition.x, event.clientY - downPosition.y) < 6 &&
+        !interactiveTarget(event.target)) {
+        onPresetChangeRef.current?.((presetIndexRef.current + 1) % PRESETS.length);
+      }
+      resetInteraction();
+    };
+    const onWindowLeave = (event: PointerEvent) => {
+      if (!event.relatedTarget) {
+        pointerLeave();
+        resetInteraction();
+      }
+    };
+    const onBlur = () => {
+      pointerLeave();
+      resetInteraction();
     };
 
     const update = () => {
+      frameRef.current = null;
       if (!runningRef.current) return;
 
-      const delta = Math.min(clock.getDelta(), 0.033);
-      const speedLerp = Math.exp(-(-60 * Math.log2(1 - 0.1)) * delta);
+      const rawDelta = Math.min(clock.getDelta(), 0.033);
+      const delta = motionPreference.matches ? 0 : rawDelta;
+      elapsed += delta;
+
+      // 风格颜色平滑过渡（场景不重建，避免点击时闪烁）
+      const p = presetRef.current;
+      if (speedTarget === 0) fovTarget = p.fov;
+      const blend = motionPreference.matches ? 1 : Math.min(1, delta * 2.4);
+      targetBg.setHex(p.background);
+      targetRoad.setHex(p.roadColor);
+      targetStreak.setHex(p.streakColor);
+      targetSide.setHex(p.sideColor);
+      targetAccent.setHex(p.accentColor);
+      lerpColor(scene.background as THREE.Color, targetBg, blend);
+      const fog = scene.fog as THREE.Fog;
+      lerpColor(fog.color, targetBg, blend);
+      fog.near = lerp(fog.near, p.fogNear, blend);
+      fog.far = lerp(fog.far, p.fogFar, blend);
+      renderer.setClearColor(scene.background as THREE.Color, 1);
+      lerpColor(roadMaterial.color, targetRoad, blend);
+      lerpColor(roadMaterial.emissive, targetRoad, blend);
+      lerpColor(streakMaterial.color, targetStreak, blend);
+      lerpColor(sideMaterial.color, targetSide, blend);
+      lerpColor(laneMaterial.color, targetAccent, blend);
+      lerpColor(starMaterial.color, targetAccent, blend);
+      lerpColor(keyLight.color, targetAccent, blend);
+      lerpColor(rimLight.color, targetStreak, blend);
+      lerpColor(scanMaterial.uniforms.uColor.value, targetStreak, blend);
+      const speedLerp = 1 - Math.exp(-delta * 8);
       speedBoost = lerp(speedBoost, speedTarget, speedLerp);
       impactPulse = lerp(impactPulse, 0, 0.07);
-      const time = clock.elapsedTime + speedBoost;
+      const time = elapsed + speedBoost;
       const flowTime = time * 0.7;
       const motionPulse = 1 + speedBoost * 0.16 + impactPulse * 0.5;
 
-      pointerCurrent.x = lerp(pointerCurrent.x, pointerTarget.x, 0.05);
-      pointerCurrent.y = lerp(pointerCurrent.y, pointerTarget.y, 0.05);
+      pointerCurrent.x = lerp(pointerCurrent.x, pointerTarget.x, 1 - Math.pow(0.001, delta));
+      pointerCurrent.y = lerp(pointerCurrent.y, pointerTarget.y, 1 - Math.pow(0.001, delta));
+      activity = lerp(activity, 0, delta * 0.45);
+      scanSweep += delta * (36 + speedBoost * 35);
+      if (scanSweep > 18) scanSweep = -160;
+      scanMaterial.uniforms.uScanX.value = pointerCurrent.x * 24;
+      scanMaterial.uniforms.uSweepZ.value = scanSweep;
+      scanMaterial.uniforms.uActivity.value = activity;
 
       camera.position.x = lerp(
         camera.position.x,
-        preset.cameraX + pointerCurrent.x * 1.35,
-        0.05
+        p.cameraX + pointerCurrent.x * 2.1,
+        0.06
       );
       camera.position.y = lerp(
         camera.position.y,
-        preset.cameraY + pointerCurrent.y * 0.85,
-        0.05
+        p.cameraY + pointerCurrent.y * 1.25,
+        0.06
       );
-      camera.lookAt(pointerCurrent.x * 6, pointerCurrent.y * 2.4, -86);
+      camera.lookAt(pointerCurrent.x * 9, pointerCurrent.y * 3.6, -86);
       camera.fov = lerp(camera.fov, fovTarget, 0.08);
       camera.updateProjectionMatrix();
 
@@ -584,7 +719,7 @@ export default function HyperspeedBg({
       const farPlane = preset.depth * 0.55;
 
       streakStates.forEach((state, index) => {
-        state.z += delta * state.speed;
+        state.z += delta * state.speed * (1 + speedBoost);
         const progress = (state.z + preset.depth) / (preset.depth + resetThreshold);
         const ribbon =
           Math.sin(progress * Math.PI * 1.65 + flowTime + state.phase) *
@@ -611,7 +746,7 @@ export default function HyperspeedBg({
       });
 
       sideStates.forEach((state, index) => {
-        state.z += delta * state.speed;
+        state.z += delta * state.speed * (1 + speedBoost);
         const progress = (state.z + preset.depth) / (preset.depth + resetThreshold);
         state.x =
           state.laneX +
@@ -633,7 +768,7 @@ export default function HyperspeedBg({
       });
 
       laneStates.forEach((state, index) => {
-        state.z += delta * (state.speed * 1.03);
+        state.z += delta * (state.speed * 1.03) * (1 + speedBoost);
         const progress = (state.z + preset.depth) / (preset.depth + resetThreshold);
         const laneWave =
           state.curve * (0.78 + speedBoost * 0.08 + impactPulse * 0.18);
@@ -655,7 +790,7 @@ export default function HyperspeedBg({
       });
 
       starState.forEach((star, index) => {
-        star.z += delta * star.speed;
+        star.z += delta * star.speed * (1 + speedBoost);
         if (star.z > farPlane) {
           star.x = random(-preset.spreadX * 1.4, preset.spreadX * 1.4);
           star.y = random(-preset.spreadY * 1.3, preset.spreadY * 1.3);
@@ -671,16 +806,32 @@ export default function HyperspeedBg({
       sideMesh.instanceMatrix.needsUpdate = true;
       laneMesh.instanceMatrix.needsUpdate = true;
 
-      composer.render(time);
-      frameRef.current = window.requestAnimationFrame(update);
+      composer.render(delta);
+      if (!motionPreference.matches && !document.hidden)
+        frameRef.current = window.requestAnimationFrame(update);
     };
 
-    host.addEventListener("pointermove", pointerMove);
-    host.addEventListener("pointerleave", pointerLeave);
-    host.addEventListener("pointerdown", onPointerDown);
-    host.addEventListener("pointerup", onPointerUp);
-    host.addEventListener("pointercancel", onPointerUp);
-    host.addEventListener("click", onClick);
+    const syncPlayback = () => {
+      onBlur();
+      if (motionPreference.matches) {
+        pointerCurrent.set(0, 0);
+        speedBoost = 0;
+        activity = 0;
+      }
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+      clock.getDelta();
+      if (!document.hidden) update();
+    };
+    window.addEventListener("pointermove", pointerMove, { passive: true });
+    window.addEventListener("pointerout", onWindowLeave);
+    window.addEventListener("pointerdown", onPointerDown, { passive: true });
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", resetInteraction);
+    window.addEventListener("blur", onBlur);
+    document.addEventListener("visibilitychange", syncPlayback);
+    motionPreference.addEventListener("change", syncPlayback);
+    redrawRef.current = () => { if (motionPreference.matches) update(); };
 
     window.addEventListener("resize", resize);
     const observer =
@@ -691,29 +842,45 @@ export default function HyperspeedBg({
 
     return () => {
       runningRef.current = false;
+      redrawRef.current = null;
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current);
         frameRef.current = null;
       }
       observer?.disconnect();
       window.removeEventListener("resize", resize);
-      host.removeEventListener("pointermove", pointerMove);
-      host.removeEventListener("pointerleave", pointerLeave);
-      host.removeEventListener("pointerdown", onPointerDown);
-      host.removeEventListener("pointerup", onPointerUp);
-      host.removeEventListener("pointercancel", onPointerUp);
-      host.removeEventListener("click", onClick);
+      window.removeEventListener("pointermove", pointerMove);
+      window.removeEventListener("pointerout", onWindowLeave);
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", resetInteraction);
+      window.removeEventListener("blur", onBlur);
+      document.removeEventListener("visibilitychange", syncPlayback);
+      motionPreference.removeEventListener("change", syncPlayback);
+      const geometries = new Set<THREE.BufferGeometry>();
+      const materials = new Set<THREE.Material>();
+      scene.traverse((object) => {
+        if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
+          geometries.add(object.geometry);
+          const list = Array.isArray(object.material) ? object.material : [object.material];
+          list.forEach((material: THREE.Material) => materials.add(material));
+        }
+        if (object instanceof THREE.InstancedMesh) object.dispose();
+      });
+      geometries.forEach((geometry) => geometry.dispose());
+      materials.forEach((material) => material.dispose());
       composer.dispose();
       renderer.dispose();
       while (host.firstChild) host.removeChild(host.firstChild);
     };
-  }, [preset, presetIndex]);
+  }, []);
 
   return (
     <div
       ref={hostRef}
-      className="fixed inset-0 z-0 transition-opacity duration-300"
-      style={{ opacity: transitioning ? 0.72 : 1 }}
+      className="hyperspeed-bg pointer-events-none fixed inset-0 z-0 transition-opacity duration-300"
+      aria-hidden="true"
+      style={{ opacity: 1 }}
     />
   );
 }

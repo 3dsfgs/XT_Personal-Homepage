@@ -29,7 +29,7 @@ export default function BlogPage() {
             posts.map((post) => (
               <Link
                 key={post.slug}
-                href={`/blog/${post.slug}`}
+                href={post.slug === "welcome" ? "/blog/about" : `/blog/${post.slug}`}
                 className="group rounded-[1.75rem] border border-white/10 bg-[rgba(var(--mio-main),0.5)] p-6 shadow-mio-link backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-[rgba(var(--mio-text-default),0.12)] hover:bg-[rgba(var(--mio-main),0.65)]"
               >
                 <div className="flex items-center justify-between gap-4">

@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/.pnpm-store/
 /.pnp
 .pnp.js
 .yarn/install-state.gz
@@ -12,21 +13,33 @@
 # next.js
 /.next/
 /out/
+/.open-next/
+/.wrangler/
+/.turbo/
 
 # production
 /build
 
 # misc
 .DS_Store
+Thumbs.db
+Desktop.ini
 *.pem
+*.key
+*.tmp
+*.bak
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# local env files
-.env*.local
+# Local environment files; configure production values in Vercel.
+.env
+.env.*
+!.env.example
+!.env.*.example
 
 # vercel
 .vercel
@@ -39,3 +52,11 @@ next-env.d.ts
 sw.*
 workbox-*
 swe-worker-*
+
+# Local reference copy; the deployed ink page uses /public/AquaInkGL/.
+/AquaInkGL/
+/28378643-09f4-4c85-a8ca-4ee6c4d765cd.png
+
+# Unpublished writing. Keep published Markdown (including welcome.md) tracked.
+/src/content/blog/0707.md
+/src/content/blog/drafts/

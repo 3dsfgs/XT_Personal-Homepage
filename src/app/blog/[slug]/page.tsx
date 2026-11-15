@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getBlogPostBySlug, getBlogPosts } from "@/lib/blog";
 
 export function generateStaticParams() {
@@ -32,6 +32,8 @@ export default async function BlogPostPage({
   params: { slug: string };
 }) {
   const { slug } = params;
+  // Keep bookmarks and old links on the same profile page as the blog index.
+  if (slug === "welcome") redirect("/blog/about");
   const post = getBlogPostBySlug(slug);
 
   if (!post) notFound();

@@ -68,15 +68,25 @@ export function MainEffect({
   );
 
   useEffect(() => {
+    let cancelled = false;
     if (bgStyle && bgStyle !== "hyperspeed" && isClientSide && document) {
       if (!document.querySelector("#remio_sakura")) {
         aSakura(bgStyle);
       }
     }
     if (audioRef.current) {
-      audioRef.current.play();
-      setAPlaying(true);
+      void audioRef.current
+        .play()
+        .then(() => {
+          if (!cancelled) setAPlaying(true);
+        })
+        .catch(() => {
+          if (!cancelled) setAPlaying(false);
+        });
     }
+    return () => {
+      cancelled = true;
+    };
   }, [audio, bgStyle]);
 
     useEffect(() => {

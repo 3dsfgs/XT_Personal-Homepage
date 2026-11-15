@@ -277,10 +277,15 @@ function readPostFile(filePath: string): BlogPost {
 export function getBlogPosts() {
   if (!existsSync(BLOG_DIR)) return [];
 
-  return readdirSync(BLOG_DIR)
-    .filter((file) => file.endsWith(""))
-    .map((file) => readPostFile(file))
-    .sort((left, right) => right.date.localeCompare(left.date));
+  return readdirSync(BLOG_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+    .map((entry) => readPostFile(entry.name))
+    // “关于我”(welcome) 固定排在第一位，其余按日期倒序
+    .sort((left, right) => {
+      if (left.slug === "welcome") return -1;
+      if (right.slug === "welcome") return 1;
+      return right.date.localeCompare(left.date);
+    });
 }
 
 export function getBlogPostBySlug(slug: string) {

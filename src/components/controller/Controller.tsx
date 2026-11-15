@@ -32,6 +32,7 @@ export function Controller({
 
   return (
     <motion.div
+      data-no-background-interaction=""
       {...motions}
       className={clsx(
         "group fixed bottom-6 right-6 z-10 flex cursor-pointer select-none flex-col items-center justify-center gap-2 whitespace-nowrap text-sm text-white/90",

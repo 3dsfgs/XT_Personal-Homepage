@@ -17,12 +17,18 @@ const withPWA = nextPWA({
   skipWaiting: true,
   disable: !isProd,
 });
-
-
 const nextConfig = {
   output: isWindows ? undefined : "standalone",
-  //output: "export", // 核心修改：改为静态导出
-  serverExternalPackages: ['pg', 'pg-cloudflare'],
+  experimental: {
+    // Next.js 14 uses this option for Node-only server dependencies.
+    serverComponentsExternalPackages: ["pg", "pg-cloudflare"],
+    // These files are read with fs and must be present in Vercel functions.
+    outputFileTracingIncludes: {
+      "/**": ["./src/config/config.json"],
+      "/blog": ["./src/content/blog/**/*.md"],
+      "/blog/*": ["./src/content/blog/**/*.md"],
+    },
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },
