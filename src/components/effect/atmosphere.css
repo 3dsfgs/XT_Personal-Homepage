@@ -1,0 +1,99 @@
+.homepage-air {
+  position: fixed;
+  z-index: 15;
+  left: max(1.25rem, env(safe-area-inset-left));
+  bottom: max(1.5rem, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: #e4eced;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+.homepage-air__switch {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid #d6e4eb29;
+  border-radius: 2px;
+  background: #0a131c70;
+  color: inherit;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition:
+    border-color 0.3s,
+    background 0.3s;
+}
+.homepage-air__switch:hover,
+.homepage-air__switch:focus-visible {
+  border-color: #d6e4eb99;
+  background: #0a131cbb;
+  outline: 1px solid #d6e4eb55;
+  outline-offset: 4px;
+}
+.homepage-air__switch svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0.6;
+}
+.homepage-air__season {
+  font-family: "Songti SC", "STSong", serif;
+  font-size: 16px;
+}
+.homepage-air__detail {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+.homepage-air__mode {
+  padding-left: 0.55rem;
+  border-left: 1px solid #d6e4eb40;
+  font-size: 9px;
+  opacity: 0.5;
+}
+.homepage-air__hint {
+  padding-left: 0.2rem;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  opacity: 0.5;
+}
+@media (min-width: 768px) and (hover: hover) {
+  .homepage-air__hint {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  .homepage-air {
+    top: max(0.75rem, env(safe-area-inset-top));
+    bottom: auto;
+    left: max(0.75rem, env(safe-area-inset-left));
+    gap: 0.25rem;
+  }
+  .homepage-air__switch {
+    min-height: 44px;
+    gap: 0.4rem;
+    padding-inline: 0.5rem;
+  }
+  .homepage-air__switch svg {
+    width: 16px;
+    height: 16px;
+  }
+  .homepage-air__detail {
+    max-width: 5em;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .homepage-air__mode {
+    display: none;
+  }
+  .homepage-air__hint {
+    font-size: 9px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .homepage-air__switch {
+    transition: none;
+  }
+}

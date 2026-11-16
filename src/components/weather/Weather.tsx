@@ -6,8 +6,7 @@
  * @Description:
  */
 "use client";
-import { useEffect, useState } from "react";
-import request from "@/lib/fetch";
+import { useLocalWeather } from "./useLocalWeather";
 import dynamic from "next/dynamic";
 
 const SunFill = dynamic(async () => (await import("@kasuie/icon")).SunFill);
@@ -32,7 +31,7 @@ const CloudShowersHeavy = dynamic(
   async () => (await import("@kasuie/icon")).CloudShowersHeavy
 );
 export const Weather = ({ size = 18 }: { size: number }) => {
-  const [weatherInfo, setWeatherInfo] = useState<Record<string, string>>();
+  const weatherInfo = useLocalWeather();
 
   const renderIcon = (weather: string) => {
     const props = {
@@ -40,13 +39,16 @@ export const Weather = ({ size = 18 }: { size: number }) => {
       color: "#fff",
     };
     const hours = new Date().getHours();
-    if (["多云"].includes(weather)) {
+    if (/雪/.test(weather)) return <Snowflake {...props} />;
+    if (/雾|霾/.test(weather)) return <Smog {...props} />;
+    if (/雷/.test(weather)) return <CloudBolt {...props} />;
+    if (/多云|阴/.test(weather)) {
       return hours < 19 && hours > 6 ? (
         <CloudSun {...props} />
       ) : (
         <CloudMoon {...props} />
       );
-    } else if (["雨"].includes(weather)) {
+    } else if (/雨/.test(weather)) {
       return hours < 19 && hours > 6 ? (
         <CloudSunRain {...props} />
       ) : (
@@ -60,16 +62,6 @@ export const Weather = ({ size = 18 }: { size: number }) => {
       );
     }
   };
-
-  useEffect(() => {
-    !weatherInfo &&
-      request.get("/api/weather").then((res) => {
-        if (res.success) {
-          console.log(res.data);
-          setWeatherInfo(res.data);
-        }
-      });
-  }, []);
 
   if (!weatherInfo) return null;
 

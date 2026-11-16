@@ -505,6 +505,108 @@
   display: block;
   margin-top: 1rem;
 }
+.oo-about .yu-section-opening {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 25%);
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 4rem);
+}
+.oo-about .yu-section-opening > div {
+  min-width: 0;
+}
+.oo-about .yu-study {
+  margin: 0;
+  width: 100%;
+  max-width: 280px;
+  justify-self: end;
+  color: var(--oo-amber);
+  user-select: none;
+}
+.oo-about .yu-study svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  stroke: currentColor;
+  stroke-width: 0.8;
+}
+.oo-about .yu-study__guides {
+  opacity: 0.18;
+}
+.oo-about .yu-study__back {
+  opacity: 0.16;
+}
+.oo-about .yu-study__front {
+  opacity: 0.72;
+}
+.oo-about .yu-study__ray {
+  stroke-dasharray: 5 8;
+  opacity: 0.65;
+  animation: yu-study-light 5s linear infinite;
+  animation-play-state: paused;
+}
+.oo-about .yu-study__scan {
+  opacity: 0.55;
+  animation: yu-study-scan 12s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+.oo-about .yu-study.is-running :is(.yu-study__scan, .yu-study__ray) {
+  animation-play-state: running;
+}
+.oo-about .yu-study text {
+  fill: currentColor;
+  stroke: none;
+  opacity: 0.6;
+  font: 9px var(--oo-mono);
+}
+.oo-about .yu-study figcaption {
+  display: flex;
+  justify-content: center;
+  gap: 0.7rem;
+  color: var(--oo-ink-3);
+  font-size: 0.65rem;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+}
+.oo-about .yu-study figcaption span {
+  color: var(--oo-amber-text);
+  font-family: var(--oo-mono);
+}
+@keyframes yu-study-light {
+  to {
+    stroke-dashoffset: -52;
+  }
+}
+@keyframes yu-study-scan {
+  from {
+    transform: translateY(-50px);
+  }
+  to {
+    transform: translateY(50px);
+  }
+}
+@media (max-width: 639px) {
+  .oo-about .yu-section-opening {
+    grid-template-columns: minmax(0, 1fr) 100px;
+    gap: 0.75rem;
+  }
+  .oo-about .yu-study {
+    align-self: start;
+    margin-top: 0.5rem;
+  }
+  .oo-about .yu-study figcaption {
+    display: none;
+  }
+  .oo-about .yu-section-opening .oo-now__live {
+    display: none;
+  }
+}
+@media (max-width: 380px) {
+  .oo-about .yu-section-opening {
+    grid-template-columns: minmax(0, 1fr) 72px;
+    gap: 0.5rem;
+  }
+}
 @media (max-width: 959px) {
   .oo-about .yu-patents-grid {
     grid-template-columns: minmax(0, 1fr);

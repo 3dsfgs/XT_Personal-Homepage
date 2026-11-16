@@ -8,6 +8,7 @@ import { MotionConfig } from "framer-motion";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { aboutConfig as C, type AboutSection, type I18n, type Lang } from "@/content/about";
 import { PastCarousel, type PastCard } from "./PastCarousel";
+import { GeometryStudy } from "./GeometryStudy";
 import { Icon, Reveal, RollNumber, SectionHead, Watermark, custom, pad } from "./reference-parts";
 
 type Props = { sections: Record<Lang, Record<string, AboutSection>>; cards: PastCard[] };
@@ -251,7 +252,17 @@ function Hero({
   );
 }
 
-function Now({ s, t, latest }: { s: AboutSection; t: Translate; latest?: PastCard }) {
+function Now({
+  s,
+  t,
+  latest,
+  lang,
+}: {
+  s: AboutSection;
+  t: Translate;
+  latest?: PastCard;
+  lang: Lang;
+}) {
   const groups = [[0, 4], [1], [2], [3, ...s.bullets.map((_, i) => i).filter((i) => i >= 5)]];
   const labels = [
     { title: { zh: "AI 日常", en: "Everyday AI" }, en: "Practice", key: "work" },
@@ -261,21 +272,26 @@ function Now({ s, t, latest }: { s: AboutSection; t: Translate; latest?: PastCar
   ];
   return (
     <section id="ab-now" className="oo-now oo-block" aria-labelledby="oo-now-title">
-      <div className="oo-now__head">
-        <SectionHead id="oo-now-title" no={2} label="Now" title={s.title} />
-        <span className="oo-now__live" aria-hidden="true">
-          <span className="oo-now__pulse" />
-          Now
-        </span>
+      <div className="yu-section-opening">
+        <div>
+          <div className="oo-now__head">
+            <SectionHead id="oo-now-title" no={2} label="Now" title={s.title} />
+            <span className="oo-now__live" aria-hidden="true">
+              <span className="oo-now__pulse" />
+              Now
+            </span>
+          </div>
+          {s.paragraphs
+            .filter((p) => !/[：:]$/.test(p))
+            .slice(0, 1)
+            .map((p) => (
+              <Reveal as="p" key={p} className="yu-section-lede">
+                {p}
+              </Reveal>
+            ))}
+        </div>
+        <GeometryStudy kind="mesh" lang={lang} />
       </div>
-      {s.paragraphs
-        .filter((p) => !/[：:]$/.test(p))
-        .slice(0, 1)
-        .map((p) => (
-          <Reveal as="p" key={p} className="yu-section-lede">
-            {p}
-          </Reveal>
-        ))}
       <div className="oo-dash">
         {labels.map((group, i) => (
           <Reveal className={`oo-panel oo-panel--${group.key}`} key={group.key} delay={i * 0.06}>
@@ -359,16 +375,21 @@ function Now({ s, t, latest }: { s: AboutSection; t: Translate; latest?: PastCar
   );
 }
 
-function Readme({ s, t }: { s: AboutSection; t: Translate }) {
+function Readme({ s, t, lang }: { s: AboutSection; t: Translate; lang: Lang }) {
   const colon = s.paragraphs.findIndex((p) => /[：:]$/.test(p));
   return (
     <section id="ab-site" className="oo-block" aria-labelledby="oo-readme-title">
-      <SectionHead id="oo-readme-title" no={4} label="README" title={s.title} />
-      {s.paragraphs.slice(0, colon < 0 ? undefined : colon).map((p) => (
-        <Reveal as="p" key={p} className="yu-section-lede">
-          {p}
-        </Reveal>
-      ))}
+      <div className="yu-section-opening">
+        <div>
+          <SectionHead id="oo-readme-title" no={4} label="README" title={s.title} />
+          {s.paragraphs.slice(0, colon < 0 ? undefined : colon).map((p) => (
+            <Reveal as="p" key={p} className="yu-section-lede">
+              {p}
+            </Reveal>
+          ))}
+        </div>
+        <GeometryStudy kind="rays" lang={lang} />
+      </div>
       <div className="oo-readme">
         <div className="oo-readme__tab">
           <span className="oo-readme__file">README.md</span>
@@ -490,21 +511,6 @@ function Colophon({ t }: { t: Translate }) {
       }),
     },
     { zh: "字体", en: "Type", text: "Newsreader · Noto Serif SC · JetBrains Mono" },
-    {
-      zh: "版式",
-      en: "Design",
-      text: (
-        <a
-          className="oo-link"
-          href="https://dawnmoon.top/about.html"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {t({ zh: "移植自 DawnMoon 的关于页", en: "Adapted from DawnMoon’s about page" })}
-          <Icon size={12} className="oo-link__arrow" />
-        </a>
-      ),
-    },
     {
       zh: "主题",
       en: "Theme",
@@ -718,14 +724,14 @@ export function AboutExperience({ sections, cards }: Props) {
             count={cards.length}
             onCopy={copyEmail}
           />
-          <Now s={sec("now")} t={t} latest={latest} />
+          <Now s={sec("now")} t={t} latest={latest} lang={lang} />
           <PastCarousel
             cards={cards}
             t={t}
             title={sec("past").title}
             paragraphs={sec("past").paragraphs}
           />
-          <Readme s={sec("site")} t={t} />
+          <Readme s={sec("site")} t={t} lang={lang} />
           <Later s={sec("later")} />
           <Fin t={t} lang={lang} onCopy={copyEmail} />
           <Colophon t={t} />

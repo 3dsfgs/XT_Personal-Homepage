@@ -74,6 +74,7 @@ export default async function Home() {
           style: varStyle,
         })}
         <MainEffect
+          liveWeather={Boolean(globalStyle?.weather)}
           bgArr={bgConfig.bgs}
           mbgArr={bgConfig.mbgs}
           bgStyle={bgConfig?.bgStyle}

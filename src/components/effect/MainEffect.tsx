@@ -29,12 +29,14 @@ export function MainEffect({
   autoAnimate,
   theme,
   hyperspeedPresetIndex,
+  liveWeather = false,
   motions = {},
 }: BgConfig & {
   bgArr: string[];
   mbgArr: string[];
   theme?: string;
   hyperspeedPresetIndex?: number;
+  liveWeather?: boolean;
   motions?: object;
 }) {
   const videoExtensions = [
@@ -321,6 +323,7 @@ export function MainEffect({
         {audio && renderAudio(audio)}
         {bgStyle === "hyperspeed" ? (
           <HyperspeedBg
+            liveWeather={liveWeather}
             presetIndex={hyperspeedPreset}
             onPresetChange={handleCycleHyperspeedPreset}
           />

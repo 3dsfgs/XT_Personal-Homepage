@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { BloomEffect, EffectComposer, EffectPass, RenderPass } from "postprocessing";
+import { useLocalWeather } from "../weather/useLocalWeather";
 import {
-  BloomEffect,
-  EffectComposer,
-  EffectPass,
-  RenderPass,
-} from "postprocessing";
+  atmosphereProfile,
+  createSeasonalAtmosphere,
+  SEASON_MODES,
+  type SeasonMode,
+} from "./seasonal-atmosphere";
+import "./atmosphere.css";
 
 type HyperspeedPreset = {
   background: number;
@@ -200,23 +203,42 @@ function lerpColor(current: THREE.Color, target: THREE.Color, factor: number) {
 export default function HyperspeedBg({
   presetIndex = 0,
   onPresetChange,
+  liveWeather = false,
 }: {
   presetIndex?: number;
   onPresetChange?: (nextPreset: number) => void;
+  liveWeather?: boolean;
 }) {
+  const weather = useLocalWeather(liveWeather);
+  const [seasonMode, setSeasonMode] = useState<SeasonMode>("auto");
+  const [date, setDate] = useState<Date | null>(null);
+  const atmosphere = useMemo(
+    () => atmosphereProfile(date || new Date(2026, 0, 1), seasonMode, weather),
+    [date, seasonMode, weather],
+  );
+  const atmosphereRef = useRef(atmosphere);
   const hostRef = useRef<HTMLDivElement>(null);
   const runningRef = useRef(true);
   const frameRef = useRef<number | null>(null);
   const onPresetChangeRef = useRef(onPresetChange);
   const redrawRef = useRef<(() => void) | null>(null);
-  const preset = useMemo(
-    () => PRESETS[Math.abs(presetIndex) % PRESETS.length],
-    [presetIndex]
-  );
+  const preset = useMemo(() => PRESETS[Math.abs(presetIndex) % PRESETS.length], [presetIndex]);
 
   // 风格切换只更新目标值，由渲染循环里的 lerp 平滑过渡，场景不重建
   const presetRef = useRef(preset);
   const presetIndexRef = useRef(presetIndex);
+
+  useEffect(() => {
+    const refresh = () => setDate(new Date());
+    refresh();
+    const timer = setInterval(refresh, 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    atmosphereRef.current = atmosphere;
+    redrawRef.current?.();
+  }, [atmosphere]);
 
   useEffect(() => {
     onPresetChangeRef.current = onPresetChange;
@@ -237,12 +259,13 @@ export default function HyperspeedBg({
     // 几何数量取首次风格；之后切换只改颜色 / 雾 / 视角，不重建场景
     const preset = presetRef.current;
 
+    const compact = matchMedia("(max-width: 767px), (pointer: coarse)").matches;
     const renderer = new THREE.WebGLRenderer({
       antialias: false,
       alpha: true,
       powerPreference: "high-performance",
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, compact ? 1 : 1.5));
     renderer.setSize(host.clientWidth, host.clientHeight, false);
     renderer.setClearColor(preset.background, 1);
     renderer.domElement.style.width = "100%";
@@ -272,7 +295,7 @@ export default function HyperspeedBg({
       preset.fov,
       host.clientWidth / host.clientHeight,
       0.1,
-      2000
+      2000,
     );
     camera.position.set(preset.cameraX, preset.cameraY, preset.cameraZ);
     camera.lookAt(0, 0, -84);
@@ -285,7 +308,7 @@ export default function HyperspeedBg({
         intensity: 0.92,
         luminanceThreshold: 0.22,
         luminanceSmoothing: 0.32,
-      })
+      }),
     );
     bloomPass.renderToScreen = true;
     composer.addPass(bloomPass);
@@ -294,7 +317,7 @@ export default function HyperspeedBg({
       66,
       preset.depth * 1.34,
       14,
-      Math.max(48, Math.floor(preset.depth / 3))
+      Math.max(48, Math.floor(preset.depth / 3)),
     );
     roadGeometry.rotateX(-Math.PI / 2);
     const roadPositions = roadGeometry.attributes.position as THREE.BufferAttribute;
@@ -310,7 +333,7 @@ export default function HyperspeedBg({
         emissive: preset.roadColor,
         emissiveIntensity: 0.12,
         depthWrite: false,
-      })
+      }),
     );
     road.position.set(0, -1.9, -preset.depth * 0.46);
     scene.add(road);
@@ -369,7 +392,7 @@ export default function HyperspeedBg({
         depthWrite: false,
         blending: THREE.AdditiveBlending,
       }),
-      preset.streakCount
+      preset.streakCount,
     );
     streakMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     scene.add(streakMesh);
@@ -384,7 +407,7 @@ export default function HyperspeedBg({
         depthWrite: false,
         blending: THREE.AdditiveBlending,
       }),
-      preset.sideCount
+      preset.sideCount,
     );
     sideMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     scene.add(sideMesh);
@@ -399,7 +422,7 @@ export default function HyperspeedBg({
         depthWrite: false,
         blending: THREE.AdditiveBlending,
       }),
-      Math.max(96, Math.floor(preset.depth * 0.85))
+      Math.max(96, Math.floor(preset.depth * 0.85)),
     );
     laneMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     scene.add(laneMesh);
@@ -414,7 +437,7 @@ export default function HyperspeedBg({
         depthWrite: false,
         blending: THREE.AdditiveBlending,
         sizeAttenuation: true,
-      })
+      }),
     );
     scene.add(stars);
 
@@ -423,15 +446,21 @@ export default function HyperspeedBg({
     const pointerCurrent = new THREE.Vector2(0, 0);
     const clock = new THREE.Clock();
     const motionPreference = matchMedia("(prefers-reduced-motion: reduce)");
+    const air = createSeasonalAtmosphere(scene, compact);
     let elapsed = 0;
     let activity = 0;
     let scanSweep = -160;
+    let gust = 0;
+    let touching = false;
+    let lastTouchX = 0;
+    let lastTouchY = 0;
+    let scrollY = window.scrollY;
+    let scrollAt = performance.now();
 
     const streakStates: State[] = [];
     const sideStates: State[] = [];
     const laneStates: State[] = [];
-    const starState: Array<{ x: number; y: number; z: number; speed: number }> =
-      [];
+    const starState: Array<{ x: number; y: number; z: number; speed: number }> = [];
     const starPositions = new Float32Array(preset.starCount * 3);
 
     const applyState = (
@@ -440,22 +469,21 @@ export default function HyperspeedBg({
       state: State,
       xScale: number,
       yScale: number,
-      zScale: number
+      zScale: number,
     ) => {
       dummy.position.set(state.x, state.y, state.z);
       dummy.rotation.set(0, 0, state.rotation);
       dummy.scale.set(
         xScale * state.scale,
         yScale * state.scale,
-        zScale * state.scale * state.thickness
+        zScale * state.scale * state.thickness,
       );
       dummy.updateMatrix();
       mesh.setMatrixAt(index, dummy.matrix);
     };
 
     const spawnStreak = (index: number, initial = false): State => {
-      const laneProgress =
-        preset.streakCount <= 1 ? 0.5 : index / (preset.streakCount - 1);
+      const laneProgress = preset.streakCount <= 1 ? 0.5 : index / (preset.streakCount - 1);
       const laneX = (laneProgress - 0.5) * preset.spreadX * 1.55;
       const laneBand = Math.sin(laneProgress * Math.PI * 2.2) * preset.spreadY * 0.08;
       const state = {
@@ -480,9 +508,7 @@ export default function HyperspeedBg({
     const spawnSide = (index: number, initial = false): State => {
       const direction = index % 2 === 0 ? -1 : 1;
       const band = index / Math.max(1, preset.sideCount - 1);
-      const laneX =
-        direction *
-        (preset.spreadX * (1.02 + band * 0.26) + random(-0.18, 0.18));
+      const laneX = direction * (preset.spreadX * (1.02 + band * 0.26) + random(-0.18, 0.18));
       const laneY = random(-1.2, 0.8);
       const state = {
         x: laneX,
@@ -490,8 +516,7 @@ export default function HyperspeedBg({
         z: initial
           ? random(-preset.depth, preset.depth * 0.1)
           : -preset.depth - Math.random() * preset.depth * 0.25,
-        speed:
-          preset.baseSpeed + random(-preset.speedSpread * 0.6, preset.speedSpread * 0.6),
+        speed: preset.baseSpeed + random(-preset.speedSpread * 0.6, preset.speedSpread * 0.6),
         scale: random(0.72, 1.35),
         rotation: random(-0.05, 0.05),
         laneX,
@@ -505,8 +530,7 @@ export default function HyperspeedBg({
     };
 
     const spawnLane = (index: number, initial = false): State => {
-      const laneProgress =
-        laneMesh.count <= 1 ? 0.5 : index / (laneMesh.count - 1);
+      const laneProgress = laneMesh.count <= 1 ? 0.5 : index / (laneMesh.count - 1);
       const laneX = Math.sin(laneProgress * Math.PI * 3.2) * 0.68;
       const laneY = -1.48 + Math.sin(laneProgress * Math.PI * 2.6) * 0.22;
       const state = {
@@ -515,8 +539,7 @@ export default function HyperspeedBg({
         z: initial
           ? random(-preset.depth, preset.depth * 0.18)
           : -preset.depth - Math.random() * preset.depth * 0.28,
-        speed:
-          preset.baseSpeed + random(-preset.speedSpread * 0.35, preset.speedSpread * 0.35),
+        speed: preset.baseSpeed + random(-preset.speedSpread * 0.35, preset.speedSpread * 0.35),
         scale: random(0.84, 1.2),
         rotation: random(-0.03, 0.03),
         laneX,
@@ -557,6 +580,7 @@ export default function HyperspeedBg({
       composer.setSize(width, height);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
+      air.resize(height, renderer.getPixelRatio());
       if (motionPreference.matches) composer.render();
     };
 
@@ -586,6 +610,7 @@ export default function HyperspeedBg({
     const sideMaterial = sideMesh.material as THREE.MeshBasicMaterial;
     const laneMaterial = laneMesh.material as THREE.MeshBasicMaterial;
     const starMaterial = stars.material as THREE.PointsMaterial;
+    const seasonalTint = new THREE.Color();
 
     let speedBoost = 0;
     let speedTarget = 0;
@@ -593,9 +618,61 @@ export default function HyperspeedBg({
     let impactPulse = 0;
 
     const interactiveTarget = (target: EventTarget | null) =>
-      target instanceof Element && target.closest(
-        'a, button, input, textarea, select, summary, [role="button"], [role="dialog"], [contenteditable="true"], [data-no-background-interaction]'
+      target instanceof Element &&
+      target.closest(
+        'a, button, input, textarea, select, summary, [role="button"], [role="dialog"], [contenteditable="true"], [data-no-background-interaction]',
       );
+
+    // Passive listeners preserve native scrolling. Relative motion gives small phone swipes weight.
+    const onTouchStart = (event: TouchEvent) => {
+      touching = false;
+      const target = event.target;
+      if (
+        motionPreference.matches ||
+        event.touches.length !== 1 ||
+        (target instanceof Element &&
+          target.closest(
+            'input, textarea, select, [role="dialog"], dialog, [data-no-background-interaction]',
+          ))
+      )
+        return;
+      touching = true;
+      lastTouchX = event.touches[0].clientX;
+      lastTouchY = event.touches[0].clientY;
+    };
+    const onTouchMove = (event: TouchEvent) => {
+      if (!touching || motionPreference.matches || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      const dx = touch.clientX - lastTouchX;
+      const dy = touch.clientY - lastTouchY;
+      lastTouchX = touch.clientX;
+      lastTouchY = touch.clientY;
+      pointerTarget.x = THREE.MathUtils.clamp(
+        pointerTarget.x + (dx / Math.max(host.clientWidth, 1)) * 4,
+        -1,
+        1,
+      );
+      pointerTarget.y = THREE.MathUtils.clamp(
+        pointerTarget.y - (dy / Math.max(host.clientHeight, 1)) * 3,
+        -0.7,
+        0.7,
+      );
+      gust = Math.min(2, gust + Math.hypot(dx, dy) * 0.015);
+      activity = 1;
+    };
+    const onTouchEnd = () => {
+      touching = false;
+    };
+    const onScroll = () => {
+      const now = performance.now();
+      if (!motionPreference.matches && compact) {
+        const velocity = Math.abs(window.scrollY - scrollY) / Math.max(now - scrollAt, 16);
+        gust = Math.min(2, gust + velocity * 0.35);
+        activity = Math.min(1, activity + velocity * 0.2);
+      }
+      scrollY = window.scrollY;
+      scrollAt = now;
+    };
 
     // Listen through the content layer while leaving navigation and controls to their own handlers.
     let downAt = 0;
@@ -608,8 +685,14 @@ export default function HyperspeedBg({
       downPointer = -1;
     };
     const onPointerDown = (event: PointerEvent) => {
-      if (motionPreference.matches || event.button !== 0 || !event.isPrimary ||
-        event.pointerType === "touch" || interactiveTarget(event.target)) return;
+      if (
+        motionPreference.matches ||
+        event.button !== 0 ||
+        !event.isPrimary ||
+        event.pointerType === "touch" ||
+        interactiveTarget(event.target)
+      )
+        return;
       downAt = performance.now();
       downPointer = event.pointerId;
       downPosition.set(event.clientX, event.clientY);
@@ -621,9 +704,12 @@ export default function HyperspeedBg({
     };
     const onPointerUp = (event: PointerEvent) => {
       if (event.pointerId !== downPointer) return;
-      if (downAt && performance.now() - downAt < 240 &&
+      if (
+        downAt &&
+        performance.now() - downAt < 240 &&
         Math.hypot(event.clientX - downPosition.x, event.clientY - downPosition.y) < 6 &&
-        !interactiveTarget(event.target)) {
+        !interactiveTarget(event.target)
+      ) {
         onPresetChangeRef.current?.((presetIndexRef.current + 1) % PRESETS.length);
       }
       resetInteraction();
@@ -637,6 +723,7 @@ export default function HyperspeedBg({
     const onBlur = () => {
       pointerLeave();
       resetInteraction();
+      touching = false;
     };
 
     const update = () => {
@@ -649,6 +736,7 @@ export default function HyperspeedBg({
 
       // 风格颜色平滑过渡（场景不重建，避免点击时闪烁）
       const p = presetRef.current;
+      const climate = atmosphereRef.current;
       if (speedTarget === 0) fovTarget = p.fov;
       const blend = motionPreference.matches ? 1 : Math.min(1, delta * 2.4);
       targetBg.setHex(p.background);
@@ -656,11 +744,17 @@ export default function HyperspeedBg({
       targetStreak.setHex(p.streakColor);
       targetSide.setHex(p.sideColor);
       targetAccent.setHex(p.accentColor);
+      seasonalTint.setHex(climate.tint);
+      targetBg.lerp(seasonalTint, climate.night ? 0.008 : 0.014);
+      targetRoad.lerp(seasonalTint, 0.035);
+      targetStreak.lerp(seasonalTint, 0.23);
+      targetSide.lerp(seasonalTint, 0.18);
+      targetAccent.lerp(seasonalTint, 0.25);
       lerpColor(scene.background as THREE.Color, targetBg, blend);
       const fog = scene.fog as THREE.Fog;
       lerpColor(fog.color, targetBg, blend);
-      fog.near = lerp(fog.near, p.fogNear, blend);
-      fog.far = lerp(fog.far, p.fogFar, blend);
+      fog.near = lerp(fog.near, p.fogNear * (1 - climate.haze * 0.5), blend);
+      fog.far = lerp(fog.far, p.fogFar * (1 - climate.haze * 0.65), blend);
       renderer.setClearColor(scene.background as THREE.Color, 1);
       lerpColor(roadMaterial.color, targetRoad, blend);
       lerpColor(roadMaterial.emissive, targetRoad, blend);
@@ -678,8 +772,28 @@ export default function HyperspeedBg({
       const flowTime = time * 0.7;
       const motionPulse = 1 + speedBoost * 0.16 + impactPulse * 0.5;
 
-      pointerCurrent.x = lerp(pointerCurrent.x, pointerTarget.x, 1 - Math.pow(0.001, delta));
-      pointerCurrent.y = lerp(pointerCurrent.y, pointerTarget.y, 1 - Math.pow(0.001, delta));
+      if (compact && !touching) pointerTarget.multiplyScalar(Math.exp(-delta * 0.8));
+      const idleX = compact ? Math.sin(elapsed * 0.18) * 0.15 : 0;
+      const idleY = compact ? Math.sin(elapsed * 0.13) * 0.06 : 0;
+      pointerCurrent.x = lerp(
+        pointerCurrent.x,
+        pointerTarget.x + idleX,
+        1 - Math.pow(0.001, delta),
+      );
+      pointerCurrent.y = lerp(
+        pointerCurrent.y,
+        pointerTarget.y + idleY,
+        1 - Math.pow(0.001, delta),
+      );
+      gust = lerp(gust, 0, 1 - Math.exp(-delta * 1.2));
+      air.update(
+        delta,
+        climate,
+        pointerCurrent.x,
+        pointerCurrent.y,
+        gust,
+        motionPreference.matches,
+      );
       activity = lerp(activity, 0, delta * 0.45);
       scanSweep += delta * (36 + speedBoost * 35);
       if (scanSweep > 18) scanSweep = -160;
@@ -687,16 +801,8 @@ export default function HyperspeedBg({
       scanMaterial.uniforms.uSweepZ.value = scanSweep;
       scanMaterial.uniforms.uActivity.value = activity;
 
-      camera.position.x = lerp(
-        camera.position.x,
-        p.cameraX + pointerCurrent.x * 2.1,
-        0.06
-      );
-      camera.position.y = lerp(
-        camera.position.y,
-        p.cameraY + pointerCurrent.y * 1.25,
-        0.06
-      );
+      camera.position.x = lerp(camera.position.x, p.cameraX + pointerCurrent.x * 2.1, 0.06);
+      camera.position.y = lerp(camera.position.y, p.cameraY + pointerCurrent.y * 1.25, 0.06);
       camera.lookAt(pointerCurrent.x * 9, pointerCurrent.y * 3.6, -86);
       camera.fov = lerp(camera.fov, fovTarget, 0.08);
       camera.updateProjectionMatrix();
@@ -722,9 +828,7 @@ export default function HyperspeedBg({
         state.z += delta * state.speed * (1 + speedBoost);
         const progress = (state.z + preset.depth) / (preset.depth + resetThreshold);
         const ribbon =
-          Math.sin(progress * Math.PI * 1.65 + flowTime + state.phase) *
-          state.curve *
-          motionPulse;
+          Math.sin(progress * Math.PI * 1.65 + flowTime + state.phase) * state.curve * motionPulse;
         state.x =
           state.laneX +
           ribbon * 1.05 +
@@ -770,18 +874,13 @@ export default function HyperspeedBg({
       laneStates.forEach((state, index) => {
         state.z += delta * (state.speed * 1.03) * (1 + speedBoost);
         const progress = (state.z + preset.depth) / (preset.depth + resetThreshold);
-        const laneWave =
-          state.curve * (0.78 + speedBoost * 0.08 + impactPulse * 0.18);
+        const laneWave = state.curve * (0.78 + speedBoost * 0.08 + impactPulse * 0.18);
         state.x =
           state.laneX +
-          Math.sin(progress * Math.PI * 1.5 + flowTime * 1.28 + state.phase) *
-            laneWave *
-            1.1;
+          Math.sin(progress * Math.PI * 1.5 + flowTime * 1.28 + state.phase) * laneWave * 1.1;
         state.y =
           state.laneY +
-          Math.cos(progress * Math.PI * 1.42 + flowTime * 1.82 + state.phase) *
-            laneWave *
-            0.82;
+          Math.cos(progress * Math.PI * 1.42 + flowTime * 1.82 + state.phase) * laneWave * 0.82;
         if (state.z > resetThreshold) {
           laneStates[index] = spawnLane(index, false);
           return;
@@ -829,13 +928,19 @@ export default function HyperspeedBg({
     window.addEventListener("pointerup", onPointerUp);
     window.addEventListener("pointercancel", resetInteraction);
     window.addEventListener("blur", onBlur);
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
     document.addEventListener("visibilitychange", syncPlayback);
     motionPreference.addEventListener("change", syncPlayback);
-    redrawRef.current = () => { if (motionPreference.matches) update(); };
+    redrawRef.current = () => {
+      if (motionPreference.matches) update();
+    };
 
     window.addEventListener("resize", resize);
-    const observer =
-      typeof ResizeObserver !== "undefined" ? new ResizeObserver(resize) : undefined;
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(resize) : undefined;
     observer?.observe(host);
     resize();
     update();
@@ -855,8 +960,14 @@ export default function HyperspeedBg({
       window.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("pointercancel", resetInteraction);
       window.removeEventListener("blur", onBlur);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchEnd);
+      window.removeEventListener("scroll", onScroll);
       document.removeEventListener("visibilitychange", syncPlayback);
       motionPreference.removeEventListener("change", syncPlayback);
+      air.dispose();
       const geometries = new Set<THREE.BufferGeometry>();
       const materials = new Set<THREE.Material>();
       scene.traverse((object) => {
@@ -876,11 +987,44 @@ export default function HyperspeedBg({
   }, []);
 
   return (
-    <div
-      ref={hostRef}
-      className="hyperspeed-bg pointer-events-none fixed inset-0 z-0 transition-opacity duration-300"
-      aria-hidden="true"
-      style={{ opacity: 1 }}
-    />
+    <>
+      <div
+        ref={hostRef}
+        className="hyperspeed-bg pointer-events-none fixed inset-0 z-0 transition-opacity duration-300"
+        aria-hidden="true"
+        style={{ opacity: 1 }}
+      />
+      {date && (
+        <aside className="homepage-air" data-no-background-interaction="" aria-label="首页季节氛围">
+          <button
+            type="button"
+            className="homepage-air__switch"
+            title={`${atmosphere.source} · ${seasonMode === "auto" ? "自动" : "四季预览"}。点击切换：自动、春、夏、秋、冬。`}
+            aria-label={`当前${seasonMode === "auto" ? "自动" : "预览"}：${atmosphere.name}，${atmosphere.detail}。点击切换季节`}
+            onClick={() =>
+              setSeasonMode(
+                SEASON_MODES[(SEASON_MODES.indexOf(seasonMode) + 1) % SEASON_MODES.length],
+              )
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="8" strokeDasharray="2 3" />
+              <path d="M12 2v5m0 10v5M2 12h5m10 0h5M8 8l8 8m0-8-8 8" />
+              <circle cx="12" cy="12" r="2" />
+            </svg>
+            <span className="homepage-air__season">{atmosphere.name}</span>
+            <span className="homepage-air__detail">{atmosphere.detail}</span>
+            <span className="homepage-air__mode">{seasonMode === "auto" ? "自然" : "预览"}</span>
+          </button>
+          <span className="homepage-air__hint">滑动生风 · 点击换季</span>
+        </aside>
+      )}
+    </>
   );
 }
