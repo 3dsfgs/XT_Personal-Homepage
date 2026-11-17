@@ -3,7 +3,7 @@
   z-index: 15;
   left: max(1.25rem, env(safe-area-inset-left));
   bottom: max(1.5rem, env(safe-area-inset-bottom));
-  display: flex;
+  display: none;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.5rem;
